@@ -50,6 +50,258 @@ func TestListSites_BuildsRequestAndMapsResponse(t *testing.T) {
 	}
 }
 
+func TestAddSite_SendsPOSTBody(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	var contentType string
+	var body map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		contentType = r.Header.Get("Content-Type")
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":true}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.AddSite(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("AddSite error = %v", err)
+	}
+
+	if method != http.MethodPost {
+		t.Fatalf("method = %q, want POST", method)
+	}
+	if contentType != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", contentType)
+	}
+	if body["siteUrl"] != "https://example.test" {
+		t.Fatalf("siteUrl = %q, want %q", body["siteUrl"], "https://example.test")
+	}
+	if result.SiteURL != "https://example.test" {
+		t.Fatalf("SiteURL = %q, want %q", result.SiteURL, "https://example.test")
+	}
+	if !result.Success {
+		t.Fatal("expected Success true")
+	}
+}
+
+func TestVerifySite_SendsPOSTBody(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	var contentType string
+	var body map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		contentType = r.Header.Get("Content-Type")
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":true}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.VerifySite(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("VerifySite error = %v", err)
+	}
+
+	if method != http.MethodPost {
+		t.Fatalf("method = %q, want POST", method)
+	}
+	if contentType != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", contentType)
+	}
+	if body["siteUrl"] != "https://example.test" {
+		t.Fatalf("siteUrl = %q, want %q", body["siteUrl"], "https://example.test")
+	}
+	if !result.Verified {
+		t.Fatal("expected Verified true")
+	}
+	if !result.Success {
+		t.Fatal("expected Success true")
+	}
+}
+
+func TestListSitemaps_UsesSiteURLAndParsesFeed(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	var capturedPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		capturedPath = r.URL.Path
+		if got := r.URL.Query().Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Url":"https://example.test/sitemap.xml","Type":"Sitemap","Compressed":true,"FileSize":123,"LastCrawled":"/Date(1732612952000+0000)/","Submitted":"/Date(1732616552000+0000)/","Status":"Success","UrlCount":12}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.ListSitemaps(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("ListSitemaps error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if capturedPath != "/GetFeeds" {
+		t.Fatalf("path = %q, want %q", capturedPath, "/GetFeeds")
+	}
+	if len(result.Sitemaps) != 1 {
+		t.Fatalf("len(Sitemaps) = %d, want 1", len(result.Sitemaps))
+	}
+	if result.Sitemaps[0].URL != "https://example.test/sitemap.xml" {
+		t.Fatalf("URL = %q, want %q", result.Sitemaps[0].URL, "https://example.test/sitemap.xml")
+	}
+	if result.Sitemaps[0].Submitted == nil {
+		t.Fatal("expected Submitted date")
+	}
+}
+
+func TestGetSitemapDetails_UsesFeedURLAndParsesFeed(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	var capturedPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		capturedPath = r.URL.Path
+		query := r.URL.Query()
+		if got := query.Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		if got := query.Get("feedUrl"); got != "https://example.test/sitemap.xml" {
+			t.Fatalf("feedUrl query param = %q, want %q", got, "https://example.test/sitemap.xml")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":{"Url":"https://example.test/sitemap.xml","Type":"Sitemap","Compressed":false,"FileSize":456,"LastCrawled":"/Date(1732612952000+0000)/","Submitted":"/Date(1732616552000+0000)/","Status":"Pending","UrlCount":34}}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetSitemapDetails(context.Background(), "https://example.test", "https://example.test/sitemap.xml")
+	if err != nil {
+		t.Fatalf("GetSitemapDetails error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if capturedPath != "/GetFeedDetails" {
+		t.Fatalf("path = %q, want %q", capturedPath, "/GetFeedDetails")
+	}
+	if result.FeedURL != "https://example.test/sitemap.xml" {
+		t.Fatalf("FeedURL = %q, want %q", result.FeedURL, "https://example.test/sitemap.xml")
+	}
+	if result.Sitemap.LastCrawled == nil {
+		t.Fatal("expected LastCrawled date")
+	}
+	if result.Sitemap.URLCount != 34 {
+		t.Fatalf("URLCount = %d, want 34", result.Sitemap.URLCount)
+	}
+}
+
+func TestGetSitemapDetails_BestEffortHandlesSparseResponse(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("method = %q, want GET", r.Method)
+		}
+		if got := r.URL.Query().Get("feedUrl"); got != "https://example.test/sitemap.xml" {
+			t.Fatalf("feedUrl query param = %q, want %q", got, "https://example.test/sitemap.xml")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":{"Url":"https://example.test/sitemap.xml"}}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetSitemapDetails(context.Background(), "https://example.test", "https://example.test/sitemap.xml")
+	if err != nil {
+		t.Fatalf("GetSitemapDetails error = %v", err)
+	}
+
+	if result.Sitemap.URL != "https://example.test/sitemap.xml" {
+		t.Fatalf("URL = %q, want %q", result.Sitemap.URL, "https://example.test/sitemap.xml")
+	}
+	if result.Sitemap.LastCrawled != nil {
+		t.Fatalf("LastCrawled = %v, want nil", result.Sitemap.LastCrawled)
+	}
+	if result.Sitemap.URLCount != 0 {
+		t.Fatalf("URLCount = %d, want 0", result.Sitemap.URLCount)
+	}
+}
+
+func TestSubmitSitemap_SendsPOSTBody(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	var contentType string
+	var body map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		contentType = r.Header.Get("Content-Type")
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":true}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.SubmitSitemap(context.Background(), "https://example.test", "https://example.test/sitemap.xml")
+	if err != nil {
+		t.Fatalf("SubmitSitemap error = %v", err)
+	}
+
+	if method != http.MethodPost {
+		t.Fatalf("method = %q, want POST", method)
+	}
+	if contentType != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", contentType)
+	}
+	if body["siteUrl"] != "https://example.test" {
+		t.Fatalf("siteUrl = %q, want %q", body["siteUrl"], "https://example.test")
+	}
+	if body["feedUrl"] != "https://example.test/sitemap.xml" {
+		t.Fatalf("feedUrl = %q, want %q", body["feedUrl"], "https://example.test/sitemap.xml")
+	}
+	if !result.Success {
+		t.Fatal("expected Success true")
+	}
+}
+
 func TestSubmitURLBatch_ValidatesMax500(t *testing.T) {
 	urlList := make([]string, 501)
 	for i := range urlList {
@@ -239,6 +491,353 @@ func TestGetCrawlStats_ParsesDotNetDate(t *testing.T) {
 	want := time.UnixMilli(1732612952000).UTC()
 	if !got.Equal(want) {
 		t.Fatalf("Date = %s, want %s", got.Format(time.RFC3339), want.Format(time.RFC3339))
+	}
+}
+
+func TestGetURLSubmissionQuota_UsesSiteURLAndMapsQuotas(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		if got := r.URL.Query().Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":{"DailyQuota":10,"MonthlyQuota":300}}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetURLSubmissionQuota(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("GetURLSubmissionQuota error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if result.DailyQuota != 10 {
+		t.Fatalf("DailyQuota = %d, want 10", result.DailyQuota)
+	}
+	if result.MonthlyQuota != 300 {
+		t.Fatalf("MonthlyQuota = %d, want 300", result.MonthlyQuota)
+	}
+}
+
+func TestGetURLInfo_UsesURLParameterAndParsesDates(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		query := r.URL.Query()
+		if got := query.Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		if got := query.Get("url"); got != "https://example.test/page" {
+			t.Fatalf("url query param = %q, want %q", got, "https://example.test/page")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":{"Url":"https://example.test/page","IsPage":true,"HttpStatus":200,"DocumentSize":5120,"AnchorCount":8,"DiscoveryDate":"/Date(1732612952000+0000)/","LastCrawledDate":"/Date(1732616552000+0000)/","TotalChildUrlCount":3}}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetURLInfo(context.Background(), "https://example.test", "https://example.test/page")
+	if err != nil {
+		t.Fatalf("GetURLInfo error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if result.LastCrawledDate == nil {
+		t.Fatal("expected LastCrawledDate")
+	}
+	if result.HTTPStatus != 200 {
+		t.Fatalf("HTTPStatus = %d, want 200", result.HTTPStatus)
+	}
+	if result.TotalChildURLCount != 3 {
+		t.Fatalf("TotalChildURLCount = %d, want 3", result.TotalChildURLCount)
+	}
+}
+
+func TestGetURLTrafficInfo_UsesURLParameterAndMapsMetrics(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		query := r.URL.Query()
+		if got := query.Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		if got := query.Get("url"); got != "https://example.test/page" {
+			t.Fatalf("url query param = %q, want %q", got, "https://example.test/page")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":{"Url":"https://example.test/page","IsPage":true,"Clicks":25,"Impressions":400}}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetURLTrafficInfo(context.Background(), "https://example.test", "https://example.test/page")
+	if err != nil {
+		t.Fatalf("GetURLTrafficInfo error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if result.Clicks != 25 {
+		t.Fatalf("Clicks = %d, want 25", result.Clicks)
+	}
+	if result.Impressions != 400 {
+		t.Fatalf("Impressions = %d, want 400", result.Impressions)
+	}
+}
+
+func TestGetLinkCounts_UsesPageParameterAndParsesCounts(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		query := r.URL.Query()
+		if got := query.Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		if got := query.Get("page"); got != "2" {
+			t.Fatalf("page query param = %q, want 2", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":{"Links":[{"Count":7,"Url":"https://referrer.test/page"}],"TotalPages":4}}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetLinkCounts(context.Background(), "https://example.test", 2)
+	if err != nil {
+		t.Fatalf("GetLinkCounts error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if result.TotalPages != 4 {
+		t.Fatalf("TotalPages = %d, want 4", result.TotalPages)
+	}
+	if len(result.Links) != 1 {
+		t.Fatalf("len(Links) = %d, want 1", len(result.Links))
+	}
+	if result.Links[0].Count != 7 {
+		t.Fatalf("Count = %d, want 7", result.Links[0].Count)
+	}
+}
+
+func TestGetRankAndTrafficStats_ParsesDotNetDate(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		if got := r.URL.Query().Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Date":"/Date(1732612952000+0000)/","Clicks":12,"Impressions":300}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetRankAndTrafficStats(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("GetRankAndTrafficStats error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if len(result.Stats) != 1 {
+		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	}
+	if result.Stats[0].Date == nil {
+		t.Fatal("expected Date")
+	}
+	if result.Stats[0].Impressions != 300 {
+		t.Fatalf("Impressions = %d, want 300", result.Stats[0].Impressions)
+	}
+}
+
+func TestGetQueryStats_UsesSiteURLAndMapsQueryStats(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		if got := r.URL.Query().Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Query":"bing api","Date":"/Date(1732612952000+0000)/","Clicks":9,"Impressions":100,"AvgClickPosition":2,"AvgImpressionPosition":4}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetQueryStats(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("GetQueryStats error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if len(result.Stats) != 1 {
+		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	}
+	if result.Stats[0].Query != "bing api" {
+		t.Fatalf("Query = %q, want %q", result.Stats[0].Query, "bing api")
+	}
+	if result.Stats[0].Date == nil {
+		t.Fatal("expected Date")
+	}
+}
+
+func TestGetPageStats_UsesQueryPayloadFieldAsPage(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		if got := r.URL.Query().Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Query":"https://example.test/page","Date":"/Date(1732612952000+0000)/","Clicks":15,"Impressions":220,"AvgClickPosition":1,"AvgImpressionPosition":3}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetPageStats(context.Background(), "https://example.test")
+	if err != nil {
+		t.Fatalf("GetPageStats error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if len(result.Stats) != 1 {
+		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	}
+	if result.Stats[0].Page != "https://example.test/page" {
+		t.Fatalf("Page = %q, want %q", result.Stats[0].Page, "https://example.test/page")
+	}
+	if result.Stats[0].Date == nil {
+		t.Fatal("expected Date")
+	}
+}
+
+func TestGetPageQueryStats_UsesPageParameterAndMapsQueries(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		query := r.URL.Query()
+		if got := query.Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		if got := query.Get("page"); got != "https://example.test/page" {
+			t.Fatalf("page query param = %q, want %q", got, "https://example.test/page")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Query":"bing api","Date":"/Date(1732612952000+0000)/","Clicks":4,"Impressions":50,"AvgClickPosition":6,"AvgImpressionPosition":8}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetPageQueryStats(context.Background(), "https://example.test", "https://example.test/page")
+	if err != nil {
+		t.Fatalf("GetPageQueryStats error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if result.Page != "https://example.test/page" {
+		t.Fatalf("Page = %q, want %q", result.Page, "https://example.test/page")
+	}
+	if len(result.Stats) != 1 {
+		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	}
+	if result.Stats[0].Query != "bing api" {
+		t.Fatalf("Query = %q, want %q", result.Stats[0].Query, "bing api")
+	}
+}
+
+func TestGetQueryPageStats_UsesQueryParameterAndMapsPages(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		query := r.URL.Query()
+		if got := query.Get("siteUrl"); got != "https://example.test" {
+			t.Fatalf("siteUrl query param = %q, want %q", got, "https://example.test")
+		}
+		if got := query.Get("query"); got != "bing api" {
+			t.Fatalf("query query param = %q, want %q", got, "bing api")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Query":"https://example.test/page","Date":"/Date(1732612952000+0000)/","Clicks":11,"Impressions":60,"AvgClickPosition":5,"AvgImpressionPosition":7}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetQueryPageStats(context.Background(), "https://example.test", "bing api")
+	if err != nil {
+		t.Fatalf("GetQueryPageStats error = %v", err)
+	}
+
+	if method != http.MethodGet {
+		t.Fatalf("method = %q, want GET", method)
+	}
+	if result.Query != "bing api" {
+		t.Fatalf("Query = %q, want %q", result.Query, "bing api")
+	}
+	if len(result.Stats) != 1 {
+		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	}
+	if result.Stats[0].Page != "https://example.test/page" {
+		t.Fatalf("Page = %q, want %q", result.Stats[0].Page, "https://example.test/page")
 	}
 }
 
