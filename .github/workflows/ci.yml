@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  go:
+    name: Go lint and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: go
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+
+      - name: go mod tidy check
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: go
+          install-mode: goinstall
+
+      - name: go test
+        run: go test ./...
+
+  csharp:
+    name: C# build and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: csharp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore BingWebmasterMcp.slnx
+
+      - name: Build
+        run: dotnet build BingWebmasterMcp.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test BingWebmasterMcp.slnx --no-build -c Release --logger "console;verbosity=minimal"
+
+  docs:
+    name: Build and deploy documentation
+    runs-on: ubuntu-latest
+    needs: [go, csharp]
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs
+        run: pip install mkdocs-material
+
+      - name: Generate articles page
+        run: python scripts/generate-articles.py docs/articles.md
+
+      - name: Build documentation
+        run: python -m mkdocs build
+
+      - name: Deploy documentation
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          keep_files: true

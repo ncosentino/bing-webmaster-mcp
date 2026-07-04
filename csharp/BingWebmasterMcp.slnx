@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/BingWebmasterMcp/BingWebmasterMcp.csproj" />
+  <Project Path="tests/BingWebmasterMcp.Tests/BingWebmasterMcp.Tests.csproj" />
+</Solution>
