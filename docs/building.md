@@ -80,6 +80,28 @@ Publish as a Native AOT self-contained binary:
 
 ---
 
+## End-to-End Testing
+
+`scripts/e2e_mcp_harness.py` drives a compiled binary over the real MCP stdio JSON-RPC protocol
+(`initialize` -> `notifications/initialized` -> `tools/list` -> `tools/call` for every tool) --
+useful for validating the actual compiled server, not just unit tests of internal classes.
+Requires Python 3.
+
+```bash
+python scripts/e2e_mcp_harness.py \
+  --label "Go E2E" \
+  --command go/bwt-mcp-go.exe \
+  --api-key YOUR_REAL_OR_DUMMY_KEY
+```
+
+With a real API key this exercises live Bing responses end-to-end. With a dummy key it still
+validates the full protocol lifecycle, tool schema registration, and that the server correctly
+surfaces Bing's real error responses (`{"ErrorCode":..., "Message":...}` at HTTP 400) as clean
+MCP tool errors -- without needing a real account. Run it against both `go/bwt-mcp-go.exe` and the
+published `bwt-mcp-csharp` binary and diff the `tools/list` output to confirm Go/C# parity.
+
+---
+
 ## Contributing
 
 1. Open an issue describing the bug or feature before submitting a PR

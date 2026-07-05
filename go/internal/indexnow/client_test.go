@@ -44,6 +44,9 @@ func TestSubmitURLs_UsesDefaultKey(t *testing.T) {
 	if !result.Success {
 		t.Fatal("expected success")
 	}
+	if result.KeySource != "configured" {
+		t.Fatalf("KeySource = %q, want %q", result.KeySource, "configured")
+	}
 }
 
 func TestSubmitURLs_KeyOverrideWins(t *testing.T) {
@@ -62,12 +65,15 @@ func TestSubmitURLs_KeyOverrideWins(t *testing.T) {
 	apiBaseURL = srv.URL
 	client := &Client{httpClient: srv.Client(), defaultKey: "configured-key"}
 
-	_, err := client.SubmitURLs(context.Background(), "example.com", []string{"https://example.com/a"}, "override-key", "")
+	result, err := client.SubmitURLs(context.Background(), "example.com", []string{"https://example.com/a"}, "override-key", "")
 	if err != nil {
 		t.Fatalf("SubmitURLs error = %v", err)
 	}
 	if gotBody.Key != "override-key" {
 		t.Fatalf("Key = %q, want %q", gotBody.Key, "override-key")
+	}
+	if result.KeySource != "override" {
+		t.Fatalf("KeySource = %q, want %q", result.KeySource, "override")
 	}
 }
 

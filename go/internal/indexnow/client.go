@@ -36,6 +36,7 @@ type submitResult struct {
 	URLList     []string  `json:"urlList"`
 	KeyLocation string    `json:"keyLocation,omitempty"`
 	Success     bool      `json:"success"`
+	KeySource   string    `json:"keySource"`
 	SubmittedAt time.Time `json:"submittedAt"`
 }
 
@@ -52,9 +53,11 @@ func (c *Client) SubmitURLs(ctx context.Context, host string, urlList []string, 
 		return nil, fmt.Errorf("urlList must contain at least one URL")
 	}
 
+	keySource := "override"
 	key := keyOverride
 	if key == "" {
 		key = c.defaultKey
+		keySource = "configured"
 	}
 	if key == "" {
 		return nil, fmt.Errorf("no IndexNow key configured; provide the key parameter or configure BING_INDEXNOW_KEY / --indexnow-key")
@@ -98,6 +101,7 @@ func (c *Client) SubmitURLs(ctx context.Context, host string, urlList []string, 
 		URLList:     urlList,
 		KeyLocation: keyLocation,
 		Success:     true,
+		KeySource:   keySource,
 		SubmittedAt: time.Now().UTC(),
 	}, nil
 }
