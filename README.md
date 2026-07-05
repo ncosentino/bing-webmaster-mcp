@@ -166,7 +166,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 ## Available Tools
 
-43 MCP tools are exposed -- the 22-tool MVP (21 classic Bing Webmaster API operations plus one bonus IndexNow tool) plus 21 Phase 2 tools. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
+55 MCP tools are exposed -- the 22-tool MVP (21 classic Bing Webmaster API operations plus one bonus IndexNow tool), 21 Phase 2 tools, and 12 Phase 3 tools. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
 
 | Area | Tools |
 |------|-------|
@@ -183,6 +183,10 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 | Site Moves | `get_site_moves`, `submit_site_move` |
 | Search Analytics | `get_rank_and_traffic_stats`, `get_query_stats`, `get_page_stats`, `get_page_query_stats`, `get_query_page_stats`, `get_query_page_detail_stats`, `get_query_traffic_stats`, `get_keyword_stats` |
 | Keyword Research | `get_keyword`, `get_related_keywords` |
+| URL Normalization | `get_query_parameters`, `add_query_parameter`, `remove_query_parameter`, `enable_disable_query_parameter` |
+| Geo-Targeting | `get_country_region_settings`, `add_country_region_settings`, `remove_country_region_settings` |
+| Connected Pages | `get_connected_pages`, `add_connected_page` |
+| Page Preview Blocks | `get_active_page_preview_blocks`, `add_page_preview_block`, `remove_page_preview_block` |
 
 **Example prompts:**
 
@@ -290,7 +294,7 @@ dotnet test BingWebmasterMcp.slnx
 
 ## Roadmap
 
-The current release covers 43 tools: the 22-tool MVP plus Phase 2 (site role delegation, blocked URLs, fetch-as-Bing, site moves, the Content Submission API). See the [Roadmap](https://github.devleader.ca/bing-webmaster-mcp/roadmap/) for what's still planned: Phase 3 (URL normalization, geo-targeting, connected pages, page preview blocks) and Phase 4 (full OAuth 2.0 alongside the API key).
+The current release covers 55 tools: the 22-tool MVP, Phase 2 (site role delegation, blocked URLs, fetch-as-Bing, site moves, the Content Submission API), and Phase 3 (URL normalization, geo-targeting, connected pages, page preview blocks). See the [Roadmap](https://github.devleader.ca/bing-webmaster-mcp/roadmap/) for what's still planned: Phase 4 (full OAuth 2.0 alongside the API key).
 
 ---
 

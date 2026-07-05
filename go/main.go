@@ -284,6 +284,90 @@ func registerTools(srv *mcp.Server, bingClient *bingwebmaster.Client, indexNowCl
 	)
 
 	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_query_parameters", Description: "List query parameter normalization settings for a site."},
+		toolHandler("getting query parameters", func(ctx context.Context, input getQueryParametersInput) (any, error) {
+			return bingClient.GetQueryParameters(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "add_query_parameter", Description: "Add a query parameter normalization setting for a site."},
+		toolHandler("adding query parameter", func(ctx context.Context, input addQueryParameterInput) (any, error) {
+			return bingClient.AddQueryParameter(ctx, input.SiteURL, input.QueryParameter)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_query_parameter", Description: "Remove a query parameter normalization setting for a site."},
+		toolHandler("removing query parameter", func(ctx context.Context, input removeQueryParameterInput) (any, error) {
+			return bingClient.RemoveQueryParameter(ctx, input.SiteURL, input.QueryParameter)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "enable_disable_query_parameter", Description: "Enable or disable a query parameter normalization setting for a site."},
+		toolHandler("changing query parameter state", func(ctx context.Context, input enableDisableQueryParameterInput) (any, error) {
+			return bingClient.EnableDisableQueryParameter(ctx, input.SiteURL, input.QueryParameter, input.IsEnabled)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_country_region_settings", Description: "List Bing geo-targeting country and region settings for a site."},
+		toolHandler("getting country region settings", func(ctx context.Context, input getCountryRegionSettingsInput) (any, error) {
+			return bingClient.GetCountryRegionSettings(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "add_country_region_settings", Description: "Add a Bing geo-targeting country or region setting for a site."},
+		toolHandler("adding country region settings", func(ctx context.Context, input addCountryRegionSettingsInput) (any, error) {
+			return bingClient.AddCountryRegionSettings(ctx, input.SiteURL, input.TwoLetterIsoCountryCode, input.SettingsType, input.URL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_country_region_settings", Description: "Remove a Bing geo-targeting country or region setting for a site."},
+		toolHandler("removing country region settings", func(ctx context.Context, input removeCountryRegionSettingsInput) (any, error) {
+			return bingClient.RemoveCountryRegionSettings(ctx, input.SiteURL, input.TwoLetterIsoCountryCode, input.SettingsType, input.URL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_connected_pages", Description: "List connected pages for a Bing Webmaster Tools site."},
+		toolHandler("getting connected pages", func(ctx context.Context, input getConnectedPagesInput) (any, error) {
+			return bingClient.GetConnectedPages(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "add_connected_page", Description: "Add a connected page for a Bing Webmaster Tools site."},
+		toolHandler("adding connected page", func(ctx context.Context, input addConnectedPageInput) (any, error) {
+			return bingClient.AddConnectedPage(ctx, input.SiteURL, input.MasterURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_active_page_preview_blocks", Description: "List active page preview blocks for a site."},
+		toolHandler("getting active page preview blocks", func(ctx context.Context, input getActivePagePreviewBlocksInput) (any, error) {
+			return bingClient.GetActivePagePreviewBlocks(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "add_page_preview_block", Description: "Add a page preview block for a site URL."},
+		toolHandler("adding page preview block", func(ctx context.Context, input addPagePreviewBlockInput) (any, error) {
+			return bingClient.AddPagePreviewBlock(ctx, input.SiteURL, input.URL, input.Reason)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_page_preview_block", Description: "Remove a page preview block for a site URL."},
+		toolHandler("removing page preview block", func(ctx context.Context, input removePagePreviewBlockInput) (any, error) {
+			return bingClient.RemovePagePreviewBlock(ctx, input.SiteURL, input.URL)
+		}),
+	)
+
+	mcp.AddTool(srv,
 		&mcp.Tool{Name: "get_query_page_detail_stats", Description: "Get daily stats for a specific query and page combination."},
 		toolHandler("getting query page detail stats", func(ctx context.Context, input getQueryPageDetailStatsInput) (any, error) {
 			return bingClient.GetQueryPageDetailStats(ctx, input.SiteURL, input.Query, input.Page)
@@ -524,6 +608,68 @@ type removeBlockedURLInput struct {
 	URL         string `json:"url" jsonschema:"The URL or directory whose block should be removed."`
 	EntityType  string `json:"entity_type,omitempty" jsonschema:"Entity type. Allowed values: Page or Directory. Defaults to Page."`
 	RequestType string `json:"request_type,omitempty" jsonschema:"Removal request type. Allowed values: CacheOnly or FullRemoval. Defaults to FullRemoval."`
+}
+
+type getQueryParametersInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose query parameter normalization settings should be listed."`
+}
+
+type addQueryParameterInput struct {
+	SiteURL        string `json:"site_url" jsonschema:"The site URL that owns the query parameter setting."`
+	QueryParameter string `json:"query_parameter" jsonschema:"The query parameter name to add, for example 'utm_campaign'."`
+}
+
+type removeQueryParameterInput struct {
+	SiteURL        string `json:"site_url" jsonschema:"The site URL that owns the query parameter setting."`
+	QueryParameter string `json:"query_parameter" jsonschema:"The query parameter name to remove."`
+}
+
+type enableDisableQueryParameterInput struct {
+	SiteURL        string `json:"site_url" jsonschema:"The site URL that owns the query parameter setting."`
+	QueryParameter string `json:"query_parameter" jsonschema:"The query parameter name whose enabled state should be changed."`
+	IsEnabled      bool   `json:"is_enabled" jsonschema:"Set to true to enable the query parameter or false to disable it."`
+}
+
+type getCountryRegionSettingsInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose Bing geo-targeting settings should be listed."`
+}
+
+type addCountryRegionSettingsInput struct {
+	SiteURL                 string `json:"site_url" jsonschema:"The site URL that owns the geo-targeting setting."`
+	TwoLetterIsoCountryCode string `json:"two_letter_iso_country_code" jsonschema:"The two-letter ISO country code to target, for example 'us'."`
+	SettingsType            string `json:"settings_type" jsonschema:"Settings scope type. Allowed values: Page, Directory, Domain, Subdomain."`
+	URL                     string `json:"url" jsonschema:"The page, directory, domain, or subdomain URL the setting applies to."`
+}
+
+type removeCountryRegionSettingsInput struct {
+	SiteURL                 string `json:"site_url" jsonschema:"The site URL that owns the geo-targeting setting."`
+	TwoLetterIsoCountryCode string `json:"two_letter_iso_country_code" jsonschema:"The two-letter ISO country code to remove."`
+	SettingsType            string `json:"settings_type" jsonschema:"Settings scope type. Allowed values: Page, Directory, Domain, Subdomain."`
+	URL                     string `json:"url" jsonschema:"The page, directory, domain, or subdomain URL the setting applies to."`
+}
+
+type getConnectedPagesInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose connected pages should be listed."`
+}
+
+type addConnectedPageInput struct {
+	SiteURL   string `json:"site_url" jsonschema:"The site URL that owns the connected page relationship."`
+	MasterURL string `json:"master_url" jsonschema:"The connected page or master URL to add."`
+}
+
+type getActivePagePreviewBlocksInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose active page preview blocks should be listed."`
+}
+
+type addPagePreviewBlockInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL that owns the blocked page preview."`
+	URL     string `json:"url" jsonschema:"The page URL whose preview should be blocked."`
+	Reason  string `json:"reason" jsonschema:"Block reason. Allowed values: AdultContent, Copyright, IllegalContent, Other."`
+}
+
+type removePagePreviewBlockInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL that owns the blocked page preview."`
+	URL     string `json:"url" jsonschema:"The page URL whose preview block should be removed."`
 }
 
 type getQueryPageDetailStatsInput struct {

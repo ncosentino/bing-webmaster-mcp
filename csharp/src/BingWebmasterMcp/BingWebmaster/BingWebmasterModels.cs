@@ -285,6 +285,111 @@ internal sealed record RemoveBlockedUrlResponse(
     bool Success,
     DateTimeOffset RequestedAt);
 
+internal sealed record QueryParameterEntry(
+    string Parameter,
+    bool IsEnabled,
+    int Source,
+    DateTimeOffset Date);
+
+internal sealed record GetQueryParametersResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<QueryParameterEntry> Parameters,
+    DateTimeOffset QueriedAt);
+
+internal sealed record AddQueryParameterResponse(
+    string SiteUrl,
+    string QueryParameter,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record RemoveQueryParameterResponse(
+    string SiteUrl,
+    string QueryParameter,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record EnableDisableQueryParameterResponse(
+    string SiteUrl,
+    string QueryParameter,
+    bool IsEnabled,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record CountryRegionSettingsEntry(
+    string TwoLetterIsoCountryCode,
+    string SettingsType,
+    string Url,
+    DateTimeOffset Date);
+
+internal sealed record GetCountryRegionSettingsResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<CountryRegionSettingsEntry> Settings,
+    DateTimeOffset QueriedAt);
+
+internal sealed record AddCountryRegionSettingsResponse(
+    string SiteUrl,
+    string TwoLetterIsoCountryCode,
+    string SettingsType,
+    string Url,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record RemoveCountryRegionSettingsResponse(
+    string SiteUrl,
+    string TwoLetterIsoCountryCode,
+    string SettingsType,
+    string Url,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record ConnectedPageEntry(
+    string Url,
+    bool IsVerified,
+    string? RequestedMasterSite,
+    string? ActualMasterSite,
+    int HttpStatusCode,
+    string? Market,
+    bool? IsBlocked,
+    DateTimeOffset? LastSuccessfullyVerified);
+
+internal sealed record GetConnectedPagesResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<ConnectedPageEntry> Pages,
+    DateTimeOffset QueriedAt);
+
+internal sealed record AddConnectedPageResponse(
+    string SiteUrl,
+    string MasterUrl,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record PagePreviewBlockEntry(
+    string Url,
+    string BlockReason,
+    DateTimeOffset SubmitDate);
+
+internal sealed record GetActivePagePreviewBlocksResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<PagePreviewBlockEntry> Blocks,
+    DateTimeOffset QueriedAt);
+
+internal sealed record AddPagePreviewBlockResponse(
+    string SiteUrl,
+    string Url,
+    string Reason,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record RemovePagePreviewBlockResponse(
+    string SiteUrl,
+    string Url,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
 internal sealed record DetailedQueryStatEntry(
     DateTimeOffset Date,
     int Clicks,
@@ -717,6 +822,75 @@ internal sealed class ApiBlockedUrl
     public string Url { get; set; } = string.Empty;
 }
 
+internal sealed class ApiQueryParameter
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("IsEnabled")]
+    public bool IsEnabled { get; set; }
+
+    [JsonPropertyName("Parameter")]
+    public string Parameter { get; set; } = string.Empty;
+
+    [JsonPropertyName("Source")]
+    public int Source { get; set; }
+}
+
+internal sealed class ApiCountryRegionSettings
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("TwoLetterIsoCountryCode")]
+    public string TwoLetterIsoCountryCode { get; set; } = string.Empty;
+
+    [JsonPropertyName("Type")]
+    public int Type { get; set; }
+
+    [JsonPropertyName("Url")]
+    public string Url { get; set; } = string.Empty;
+}
+
+internal sealed class ApiConnectedPage
+{
+    [JsonPropertyName("ActualMasterSite")]
+    public string? ActualMasterSite { get; set; }
+
+    [JsonPropertyName("HttpStatusCode")]
+    public int HttpStatusCode { get; set; }
+
+    [JsonPropertyName("IsBlocked")]
+    public bool? IsBlocked { get; set; }
+
+    [JsonPropertyName("IsVerified")]
+    public bool IsVerified { get; set; }
+
+    [JsonPropertyName("LastSuccessfullyVerified")]
+    public string? LastSuccessfullyVerified { get; set; }
+
+    [JsonPropertyName("Market")]
+    public string? Market { get; set; }
+
+    [JsonPropertyName("RequestedMasterSite")]
+    public string? RequestedMasterSite { get; set; }
+
+    [JsonPropertyName("Url")]
+    public string Url { get; set; } = string.Empty;
+}
+
+internal sealed class ApiPagePreview
+{
+    [JsonPropertyName("BlockReason")]
+    public int BlockReason { get; set; }
+
+    [JsonPropertyName("SubmitDate")]
+    public string SubmitDate { get; set; } = string.Empty;
+
+    [JsonPropertyName("Url")]
+    public string Url { get; set; } = string.Empty;
+}
+
 internal sealed class ApiDetailedQueryStat
 {
     [JsonPropertyName("Date")]
@@ -909,6 +1083,57 @@ internal sealed class BlockedUrlRequest
     public ApiBlockedUrl BlockedUrl { get; set; } = new();
 }
 
+internal sealed class QueryParameterRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("queryParameter")]
+    public string QueryParameter { get; set; } = string.Empty;
+}
+
+internal sealed class EnableDisableQueryParameterRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("queryParameter")]
+    public string QueryParameter { get; set; } = string.Empty;
+
+    [JsonPropertyName("isEnabled")]
+    public bool IsEnabled { get; set; }
+}
+
+internal sealed class CountryRegionSettingsRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("settings")]
+    public ApiCountryRegionSettings Settings { get; set; } = new();
+}
+
+internal sealed class ConnectedPageRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("masterUrl")]
+    public string MasterUrl { get; set; } = string.Empty;
+}
+
+internal sealed class PagePreviewBlockRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("reason")]
+    public int Reason { get; set; }
+}
+
 internal sealed class ChildrenUrlInfoRequest
 {
     [JsonPropertyName("siteUrl")]
@@ -982,6 +1207,10 @@ internal sealed class IndexNowRequest
 [JsonSerializable(typeof(ApiKeywordStat[]))]
 [JsonSerializable(typeof(ApiSiteRole[]))]
 [JsonSerializable(typeof(ApiBlockedUrl[]))]
+[JsonSerializable(typeof(ApiQueryParameter[]))]
+[JsonSerializable(typeof(ApiCountryRegionSettings[]))]
+[JsonSerializable(typeof(ApiConnectedPage[]))]
+[JsonSerializable(typeof(ApiPagePreview[]))]
 [JsonSerializable(typeof(ApiDetailedQueryStat[]))]
 [JsonSerializable(typeof(ApiKeywordDetails))]
 [JsonSerializable(typeof(ApiKeywordDetails[]))]
@@ -999,6 +1228,11 @@ internal sealed class IndexNowRequest
 [JsonSerializable(typeof(RemoveSiteRoleRequest))]
 [JsonSerializable(typeof(RemoveSiteRoleItem))]
 [JsonSerializable(typeof(BlockedUrlRequest))]
+[JsonSerializable(typeof(QueryParameterRequest))]
+[JsonSerializable(typeof(EnableDisableQueryParameterRequest))]
+[JsonSerializable(typeof(CountryRegionSettingsRequest))]
+[JsonSerializable(typeof(ConnectedPageRequest))]
+[JsonSerializable(typeof(PagePreviewBlockRequest))]
 [JsonSerializable(typeof(ChildrenUrlInfoRequest))]
 [JsonSerializable(typeof(SubmitSiteMoveRequest))]
 [JsonSerializable(typeof(SubmitContentRequest))]
@@ -1032,6 +1266,18 @@ internal sealed class IndexNowRequest
 [JsonSerializable(typeof(GetBlockedUrlsResponse))]
 [JsonSerializable(typeof(AddBlockedUrlResponse))]
 [JsonSerializable(typeof(RemoveBlockedUrlResponse))]
+[JsonSerializable(typeof(GetQueryParametersResponse))]
+[JsonSerializable(typeof(AddQueryParameterResponse))]
+[JsonSerializable(typeof(RemoveQueryParameterResponse))]
+[JsonSerializable(typeof(EnableDisableQueryParameterResponse))]
+[JsonSerializable(typeof(GetCountryRegionSettingsResponse))]
+[JsonSerializable(typeof(AddCountryRegionSettingsResponse))]
+[JsonSerializable(typeof(RemoveCountryRegionSettingsResponse))]
+[JsonSerializable(typeof(GetConnectedPagesResponse))]
+[JsonSerializable(typeof(AddConnectedPageResponse))]
+[JsonSerializable(typeof(GetActivePagePreviewBlocksResponse))]
+[JsonSerializable(typeof(AddPagePreviewBlockResponse))]
+[JsonSerializable(typeof(RemovePagePreviewBlockResponse))]
 [JsonSerializable(typeof(QueryPageDetailStatsResponse))]
 [JsonSerializable(typeof(QueryTrafficStatsResponse))]
 [JsonSerializable(typeof(GetKeywordResponse))]

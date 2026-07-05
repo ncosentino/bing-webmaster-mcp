@@ -270,6 +270,74 @@ TOOL_CASES: list[ToolCase] = [
         None,
         "GetRelatedKeywords",
     ),
+    # Phase 3 -- URL normalization (query parameters).
+    ToolCase("get_query_parameters", {"site_url": "https://example.test/"}, None, "GetQueryParameters"),
+    ToolCase(
+        "add_query_parameter",
+        {"site_url": "https://example.test/", "query_parameter": "utm_campaign"},
+        None,
+        "AddQueryParameter",
+    ),
+    ToolCase(
+        "remove_query_parameter",
+        {"site_url": "https://example.test/", "query_parameter": "utm_campaign"},
+        None,
+        "RemoveQueryParameter",
+    ),
+    ToolCase(
+        "enable_disable_query_parameter",
+        {"site_url": "https://example.test/", "query_parameter": "utm_campaign", "is_enabled": False},
+        None,
+        "EnableDisableQueryParameter",
+    ),
+    # Phase 3 -- geo-targeting (country/region settings).
+    ToolCase("get_country_region_settings", {"site_url": "https://example.test/"}, None, "GetCountryRegionSettings"),
+    ToolCase(
+        "add_country_region_settings",
+        {
+            "site_url": "https://example.test/",
+            "two_letter_iso_country_code": "us",
+            "settings_type": "Domain",
+            "url": "https://example.test/",
+        },
+        None,
+        "AddCountryRegionSettings",
+    ),
+    ToolCase(
+        "remove_country_region_settings",
+        {
+            "site_url": "https://example.test/",
+            "two_letter_iso_country_code": "us",
+            "settings_type": "Domain",
+            "url": "https://example.test/",
+        },
+        None,
+        "RemoveCountryRegionSettings",
+    ),
+    # Phase 3 -- connected pages.
+    ToolCase("get_connected_pages", {"site_url": "https://example.test/"}, None, "GetConnectedPages"),
+    ToolCase(
+        "add_connected_page",
+        {"site_url": "https://example.test/", "master_url": "https://master.example.test/"},
+        None,
+        "AddConnectedPage",
+    ),
+    # Phase 3 -- page preview blocks.
+    ToolCase(
+        "get_active_page_preview_blocks", {"site_url": "https://example.test/"}, None, "GetActivePagePreviewBlocks"
+    ),
+    ToolCase(
+        "add_page_preview_block",
+        {"site_url": "https://example.test/", "url": "https://example.test/blocked-preview", "reason": "Other"},
+        None,
+        "AddPagePreviewBlock",
+    ),
+    ToolCase(
+        "remove_page_preview_block",
+        {"site_url": "https://example.test/", "url": "https://example.test/blocked-preview"},
+        None,
+        "RemovePagePreviewBlock",
+    ),
 ]
 
 _manifest_names = {c.tool for c in TOOL_CASES}

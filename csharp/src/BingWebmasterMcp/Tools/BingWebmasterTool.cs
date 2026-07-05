@@ -226,6 +226,140 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             BingWebmasterJsonContext.Default.RemoveBlockedUrlResponse,
             cancellationToken);
 
+    [McpServerTool(Name = "get_query_parameters")]
+    [Description("List URL normalization query parameters configured for a site.")]
+    internal Task<string> GetQueryParameters(
+        [Description("The Bing site URL.")] string site_url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.GetQueryParametersAsync(site_url, ct),
+            BingWebmasterJsonContext.Default.GetQueryParametersResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "add_query_parameter")]
+    [Description("Add a URL normalization query parameter for a site.")]
+    internal Task<string> AddQueryParameter(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The query parameter name to add, for example utm_campaign.")] string query_parameter,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.AddQueryParameterAsync(site_url, query_parameter, ct),
+            BingWebmasterJsonContext.Default.AddQueryParameterResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "remove_query_parameter")]
+    [Description("Remove a URL normalization query parameter from a site.")]
+    internal Task<string> RemoveQueryParameter(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The query parameter name to remove.")] string query_parameter,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.RemoveQueryParameterAsync(site_url, query_parameter, ct),
+            BingWebmasterJsonContext.Default.RemoveQueryParameterResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "enable_disable_query_parameter")]
+    [Description("Enable or disable a URL normalization query parameter for a site.")]
+    internal Task<string> EnableDisableQueryParameter(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The query parameter name to update.")] string query_parameter,
+        [Description("Enable the query parameter when true; disable it when false.")] bool is_enabled,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.EnableDisableQueryParameterAsync(site_url, query_parameter, is_enabled, ct),
+            BingWebmasterJsonContext.Default.EnableDisableQueryParameterResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "get_country_region_settings")]
+    [Description("List Bing geo-targeting country or region settings configured for a site.")]
+    internal Task<string> GetCountryRegionSettings(
+        [Description("The Bing site URL.")] string site_url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.GetCountryRegionSettingsAsync(site_url, ct),
+            BingWebmasterJsonContext.Default.GetCountryRegionSettingsResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "add_country_region_settings")]
+    [Description("Add Bing geo-targeting country or region settings for a site URL scope.")]
+    internal Task<string> AddCountryRegionSettings(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The two-letter ISO country code, for example us.")] string two_letter_iso_country_code,
+        [Description("The settings type: Page, Directory, Domain, or Subdomain.")] string settings_type,
+        [Description("The page, directory, domain, or subdomain URL the geo-targeting setting applies to.")] string url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.AddCountryRegionSettingsAsync(site_url, two_letter_iso_country_code, settings_type, url, ct),
+            BingWebmasterJsonContext.Default.AddCountryRegionSettingsResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "remove_country_region_settings")]
+    [Description("Remove Bing geo-targeting country or region settings for a site URL scope.")]
+    internal Task<string> RemoveCountryRegionSettings(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The two-letter ISO country code, for example us.")] string two_letter_iso_country_code,
+        [Description("The settings type: Page, Directory, Domain, or Subdomain.")] string settings_type,
+        [Description("The page, directory, domain, or subdomain URL the geo-targeting setting applies to.")] string url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.RemoveCountryRegionSettingsAsync(site_url, two_letter_iso_country_code, settings_type, url, ct),
+            BingWebmasterJsonContext.Default.RemoveCountryRegionSettingsResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "get_connected_pages")]
+    [Description("List connected pages configured for a site.")]
+    internal Task<string> GetConnectedPages(
+        [Description("The Bing site URL.")] string site_url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.GetConnectedPagesAsync(site_url, ct),
+            BingWebmasterJsonContext.Default.GetConnectedPagesResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "add_connected_page")]
+    [Description("Add a connected page to a site.")]
+    internal Task<string> AddConnectedPage(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The master page URL to connect.")] string master_url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.AddConnectedPageAsync(site_url, master_url, ct),
+            BingWebmasterJsonContext.Default.AddConnectedPageResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "get_active_page_preview_blocks")]
+    [Description("List active Bing page preview blocks for a site.")]
+    internal Task<string> GetActivePagePreviewBlocks(
+        [Description("The Bing site URL.")] string site_url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.GetActivePagePreviewBlocksAsync(site_url, ct),
+            BingWebmasterJsonContext.Default.GetActivePagePreviewBlocksResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "add_page_preview_block")]
+    [Description("Add a Bing page preview block for a URL.")]
+    internal Task<string> AddPagePreviewBlock(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The page URL to block from previews.")] string url,
+        [Description("The block reason: AdultContent, Copyright, IllegalContent, or Other.")] string reason,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.AddPagePreviewBlockAsync(site_url, url, reason, ct),
+            BingWebmasterJsonContext.Default.AddPagePreviewBlockResponse,
+            cancellationToken);
+
+    [McpServerTool(Name = "remove_page_preview_block")]
+    [Description("Remove a Bing page preview block for a URL.")]
+    internal Task<string> RemovePagePreviewBlock(
+        [Description("The Bing site URL.")] string site_url,
+        [Description("The page URL whose preview block should be removed.")] string url,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(
+            ct => client.RemovePagePreviewBlockAsync(site_url, url, ct),
+            BingWebmasterJsonContext.Default.RemovePagePreviewBlockResponse,
+            cancellationToken);
+
     [McpServerTool(Name = "get_url_info")]
     [Description("Get Bing index metadata for a specific URL.")]
     internal Task<string> GetUrlInfo(

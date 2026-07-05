@@ -24,7 +24,7 @@ from tool_manifest import TOOL_CASES, assert_manifest_matches_tool_list
 def test_tools_list_matches_manifest(mcp_client):
     tools = mcp_client.list_tools()["result"]["tools"]
     tool_names = [t["name"] for t in tools]
-    assert len(tool_names) == 43, f"expected 43 tools, got {len(tool_names)}: {sorted(tool_names)}"
+    assert len(tool_names) == 55, f"expected 55 tools, got {len(tool_names)}: {sorted(tool_names)}"
     assert_manifest_matches_tool_list(tool_names)
 
 

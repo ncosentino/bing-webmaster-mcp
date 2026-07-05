@@ -1,12 +1,45 @@
 ---
-description: Shipped Phase 2, and planned Phase 3/4 tools for the Bing Webmaster Tools MCP server, beyond the original 22-tool MVP.
+description: Shipped Phase 2 and Phase 3, and planned Phase 4, for the Bing Webmaster Tools MCP server, beyond the original 22-tool MVP.
 ---
 
 # Roadmap
 
-The current release covers 43 tools: the original 22-tool MVP plus Phase 2 (21 tools, shipped and
-live-tested). The full Bing Webmaster API surface is much larger still -- this page tracks what's
-deliberately deferred and why, plus known live-testing caveats for what's already shipped.
+The current release covers 55 tools: the original 22-tool MVP, Phase 2 (21 tools), and Phase 3 (12
+tools) -- all shipped and live-tested. The full Bing Webmaster API surface is much larger still --
+this page tracks what's deliberately deferred and why, plus known live-testing caveats for what's
+already shipped.
+
+---
+
+## Phase 3 -- shipped
+
+URL normalization, geo-targeting, connected pages, and page preview blocks -- live-tested against a
+real Bing Webmaster account with both Go and C# confirmed at parity:
+
+- URL normalization: `get_query_parameters`, `add_query_parameter`, `remove_query_parameter`,
+  `enable_disable_query_parameter`
+- Geo-targeting: `get_country_region_settings`, `add_country_region_settings`,
+  `remove_country_region_settings`
+- Connected pages: `get_connected_pages`, `add_connected_page`
+- Page preview blocks: `get_active_page_preview_blocks`, `add_page_preview_block`,
+  `remove_page_preview_block`
+
+Wire format for all 12 was confirmed directly against Bing's live WSDL/XSD schema
+(`ssl.bing.com/webmasterapi/api.svc?xsd=...`) plus real recorded HTTP cassettes from the
+`merj/bing-webmaster-tools` Python reference library's own integration tests -- not guessed. This
+surfaced two real wire-format subtleties an initial read of that library's own (simplified)
+response models would have missed: `GetActivePagePreviewBlocks` and `GetConnectedPages` both
+return considerably richer objects on the wire than the reference library's own models expose. Only
+a useful subset of each is surfaced by this server's tools.
+
+**Live-testing caveats:**
+
+- `add_connected_page` is unit-tested and covered by the automated mock-server E2E suite, but was
+  **not** exercised against the real account -- Bing's API has no corresponding removal method at
+  all, so unlike every other write tool in this server, there is no way to reverse it. Read
+  (`get_connected_pages`) is confirmed live-working.
+- Every other Phase 3 write tool was round-tripped live (add → verify → remove/disable → verify)
+  with both languages producing identical results, including full cleanup back to an empty state.
 
 ---
 
@@ -48,24 +81,10 @@ account with both Go and C# confirmed at parity:
 ## Testing infrastructure
 
 Client-layer unit tests (real HTTP fixtures, both languages) and the automated mock-server E2E
-suite (`tests/e2e/`, all 43 tools, both languages, runs in CI) are both required and neither is
+suite (`tests/e2e/`, all 55 tools, both languages, runs in CI) are both required and neither is
 sufficient alone -- unit tests cannot reach MCP's own argument-binding layer, which is exactly
 where three real bugs hid until the E2E suite was built. See
 [End-to-End Testing](building.md#end-to-end-testing) for what's covered and how to run it.
-
----
-
-## Phase 3 (planned)
-
-Niche/administrative operations, used far less frequently:
-
-- URL normalization (query parameters): `get_query_parameters`, `add_query_parameter`,
-  `enable_disable_query_parameter`, `remove_query_parameter`
-- Geo-targeting: `get_country_region_settings`, `add_country_region_settings`,
-  `remove_country_region_settings`
-- Connected pages: `get_connected_pages`, `add_connected_page`
-- Page preview blocks: `get_active_page_preview_blocks`, `add_page_preview_block`,
-  `remove_page_preview_block`
 
 ---
 
@@ -87,7 +106,6 @@ same deprecated feature area.
 
 ---
 
-Have a use case that needs something from Phase 3 or 4 sooner, or ran into one of the caveats
-above?
+Have a use case that needs something from Phase 4 sooner, or ran into one of the caveats above?
 [Open an issue](https://github.com/ncosentino/bing-webmaster-mcp/issues) describing what you're
 trying to do.

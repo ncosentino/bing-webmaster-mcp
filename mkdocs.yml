@@ -94,6 +94,22 @@ nav:
     - Keyword Research:
       - get_keyword: tools/get-keyword.md
       - get_related_keywords: tools/get-related-keywords.md
+    - URL Normalization:
+      - get_query_parameters: tools/get-query-parameters.md
+      - add_query_parameter: tools/add-query-parameter.md
+      - remove_query_parameter: tools/remove-query-parameter.md
+      - enable_disable_query_parameter: tools/enable-disable-query-parameter.md
+    - Geo-Targeting:
+      - get_country_region_settings: tools/get-country-region-settings.md
+      - add_country_region_settings: tools/add-country-region-settings.md
+      - remove_country_region_settings: tools/remove-country-region-settings.md
+    - Connected Pages:
+      - get_connected_pages: tools/get-connected-pages.md
+      - add_connected_page: tools/add-connected-page.md
+    - Page Preview Blocks:
+      - get_active_page_preview_blocks: tools/get-active-page-preview-blocks.md
+      - add_page_preview_block: tools/add-page-preview-block.md
+      - remove_page_preview_block: tools/remove-page-preview-block.md
   - Setup by Tool: setup-by-tool.md
   - Configuration: configuration.md
   - Go vs C#: implementations.md

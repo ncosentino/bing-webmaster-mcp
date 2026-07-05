@@ -1,13 +1,14 @@
 ---
-description: Overview of the 43 MCP tools exposed by the Bing Webmaster Tools MCP server, grouped by area, with common parameter and error-handling notes.
+description: Overview of the 55 MCP tools exposed by the Bing Webmaster Tools MCP server, grouped by area, with common parameter and error-handling notes.
 ---
 
 # MCP Tools
 
-43 tools are exposed by this MCP server -- the 22-tool MVP (21 classic Bing Webmaster API
-operations plus one bonus IndexNow tool) plus 21 Phase 2 tools covering deeper site management,
-blocked URLs, fetch diagnostics, site moves, and the Content Submission API. All tools work
-identically across the Go and C# implementations. See the [Roadmap](../roadmap.md) for what's
+55 tools are exposed by this MCP server -- the 22-tool MVP (21 classic Bing Webmaster API
+operations plus one bonus IndexNow tool), 21 Phase 2 tools covering deeper site management,
+blocked URLs, fetch diagnostics, site moves, and the Content Submission API, and 12 Phase 3 tools
+covering URL normalization, geo-targeting, connected pages, and page preview blocks. All tools
+work identically across the Go and C# implementations. See the [Roadmap](../roadmap.md) for what's
 planned beyond this set.
 
 | Tool | Area | Description |
@@ -55,6 +56,18 @@ planned beyond this set.
 | [`get_keyword_stats`](get-keyword-stats.md) | Search Analytics | Historical keyword impression stats (market-wide) |
 | [`get_keyword`](get-keyword.md) | Keyword Research | Market-wide impressions for one keyword/period |
 | [`get_related_keywords`](get-related-keywords.md) | Keyword Research | Discover related keywords with impression data |
+| [`get_query_parameters`](get-query-parameters.md) | URL Normalization | List URL normalization query parameters |
+| [`add_query_parameter`](add-query-parameter.md) | URL Normalization | Add a query parameter Bing should ignore |
+| [`remove_query_parameter`](remove-query-parameter.md) | URL Normalization | Remove a query parameter |
+| [`enable_disable_query_parameter`](enable-disable-query-parameter.md) | URL Normalization | Toggle a query parameter on/off |
+| [`get_country_region_settings`](get-country-region-settings.md) | Geo-Targeting | List geo-targeting settings |
+| [`add_country_region_settings`](add-country-region-settings.md) | Geo-Targeting | Target a page/directory/domain/subdomain at a country |
+| [`remove_country_region_settings`](remove-country-region-settings.md) | Geo-Targeting | Remove a geo-targeting setting |
+| [`get_connected_pages`](get-connected-pages.md) | Connected Pages | List pages connected to your site |
+| [`add_connected_page`](add-connected-page.md) | Connected Pages | Declare a connected page |
+| [`get_active_page_preview_blocks`](get-active-page-preview-blocks.md) | Page Preview Blocks | List active page preview blocks |
+| [`add_page_preview_block`](add-page-preview-block.md) | Page Preview Blocks | Block a page's search result preview |
+| [`remove_page_preview_block`](remove-page-preview-block.md) | Page Preview Blocks | Unblock a page's search result preview |
 
 ---
 
@@ -94,8 +107,10 @@ shape. This server renames the field appropriately per tool so the output is una
 
 ### Destructive and consequential tools
 
-Most Phase 2 write tools are safely reversible (`add_blocked_url` / `remove_blocked_url`,
-`submit_sitemap` / `remove_sitemap`). Two are not: `remove_site` permanently drops a site's
-history from your account view, and `submit_site_move` tells Bing to treat one site as superseded
-by another in a way that isn't easily undone. Use both with care.
+Most write tools are safely reversible (`add_blocked_url` / `remove_blocked_url`, `submit_sitemap`
+/ `remove_sitemap`, `add_country_region_settings` / `remove_country_region_settings`,
+`add_page_preview_block` / `remove_page_preview_block`). A few are not: `remove_site` permanently
+drops a site's history from your account view, `submit_site_move` tells Bing to treat one site as
+superseded by another in a way that isn't easily undone, and `add_connected_page` has no matching
+removal tool in Bing's API at all. Use all three with care.
 

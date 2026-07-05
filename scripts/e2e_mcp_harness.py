@@ -9,6 +9,7 @@ see tests/e2e/ for the automated, mock-server-backed pytest suite that runs
 in CI on every push with zero live credentials.
 """
 
+import json
 import os
 import sys
 

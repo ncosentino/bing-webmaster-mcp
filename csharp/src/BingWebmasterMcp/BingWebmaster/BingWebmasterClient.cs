@@ -739,6 +739,318 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             DateTimeOffset.UtcNow);
     }
 
+    internal async Task<GetQueryParametersResponse> GetQueryParametersAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetQueryParameters",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiQueryParameterArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var parameters = rawRows.Select(row => new QueryParameterEntry(
+            row.Parameter,
+            row.IsEnabled,
+            row.Source,
+            ParseRequiredDate(row.Date, nameof(row.Date)))).ToList();
+
+        return new GetQueryParametersResponse(normalizedSiteUrl, parameters.Count, parameters, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<AddQueryParameterResponse> AddQueryParameterAsync(
+        string siteUrl,
+        string queryParameter,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedQueryParameter = RequireText(queryParameter, nameof(queryParameter));
+
+        await PostCommandAsync(
+            "AddQueryParameter",
+            new QueryParameterRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                QueryParameter = normalizedQueryParameter
+            },
+            BingWebmasterJsonContext.Default.QueryParameterRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new AddQueryParameterResponse(normalizedSiteUrl, normalizedQueryParameter, true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RemoveQueryParameterResponse> RemoveQueryParameterAsync(
+        string siteUrl,
+        string queryParameter,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedQueryParameter = RequireText(queryParameter, nameof(queryParameter));
+
+        await PostCommandAsync(
+            "RemoveQueryParameter",
+            new QueryParameterRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                QueryParameter = normalizedQueryParameter
+            },
+            BingWebmasterJsonContext.Default.QueryParameterRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemoveQueryParameterResponse(normalizedSiteUrl, normalizedQueryParameter, true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<EnableDisableQueryParameterResponse> EnableDisableQueryParameterAsync(
+        string siteUrl,
+        string queryParameter,
+        bool isEnabled,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedQueryParameter = RequireText(queryParameter, nameof(queryParameter));
+
+        await PostCommandAsync(
+            "EnableDisableQueryParameter",
+            new EnableDisableQueryParameterRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                QueryParameter = normalizedQueryParameter,
+                IsEnabled = isEnabled
+            },
+            BingWebmasterJsonContext.Default.EnableDisableQueryParameterRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new EnableDisableQueryParameterResponse(
+            normalizedSiteUrl,
+            normalizedQueryParameter,
+            isEnabled,
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetCountryRegionSettingsResponse> GetCountryRegionSettingsAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetCountryRegionSettings",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiCountryRegionSettingsArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var settings = rawRows.Select(row => new CountryRegionSettingsEntry(
+            row.TwoLetterIsoCountryCode,
+            DecodeCountryRegionSettingsType(row.Type),
+            row.Url,
+            ParseRequiredDate(row.Date, nameof(row.Date)))).ToList();
+
+        return new GetCountryRegionSettingsResponse(normalizedSiteUrl, settings.Count, settings, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<AddCountryRegionSettingsResponse> AddCountryRegionSettingsAsync(
+        string siteUrl,
+        string twoLetterIsoCountryCode,
+        string settingsType,
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedCountryCode = RequireText(twoLetterIsoCountryCode, nameof(twoLetterIsoCountryCode));
+        var settingsTypeValue = ParseCountryRegionSettingsType(settingsType, nameof(settingsType));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var requestDate = DateTimeOffset.UtcNow;
+
+        await PostCommandAsync(
+            "AddCountryRegionSettings",
+            new CountryRegionSettingsRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Settings = new ApiCountryRegionSettings
+                {
+                    Date = BingDateParser.Format(requestDate),
+                    TwoLetterIsoCountryCode = normalizedCountryCode,
+                    Type = settingsTypeValue,
+                    Url = normalizedUrl
+                }
+            },
+            BingWebmasterJsonContext.Default.CountryRegionSettingsRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new AddCountryRegionSettingsResponse(
+            normalizedSiteUrl,
+            normalizedCountryCode,
+            DecodeCountryRegionSettingsType(settingsTypeValue),
+            normalizedUrl,
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RemoveCountryRegionSettingsResponse> RemoveCountryRegionSettingsAsync(
+        string siteUrl,
+        string twoLetterIsoCountryCode,
+        string settingsType,
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedCountryCode = RequireText(twoLetterIsoCountryCode, nameof(twoLetterIsoCountryCode));
+        var settingsTypeValue = ParseCountryRegionSettingsType(settingsType, nameof(settingsType));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var requestDate = DateTimeOffset.UtcNow;
+
+        await PostCommandAsync(
+            "RemoveCountryRegionSettings",
+            new CountryRegionSettingsRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Settings = new ApiCountryRegionSettings
+                {
+                    Date = BingDateParser.Format(requestDate),
+                    TwoLetterIsoCountryCode = normalizedCountryCode,
+                    Type = settingsTypeValue,
+                    Url = normalizedUrl
+                }
+            },
+            BingWebmasterJsonContext.Default.CountryRegionSettingsRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemoveCountryRegionSettingsResponse(
+            normalizedSiteUrl,
+            normalizedCountryCode,
+            DecodeCountryRegionSettingsType(settingsTypeValue),
+            normalizedUrl,
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetConnectedPagesResponse> GetConnectedPagesAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetConnectedPages",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiConnectedPageArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var pages = rawRows.Select(row => new ConnectedPageEntry(
+            row.Url,
+            row.IsVerified,
+            row.RequestedMasterSite,
+            row.ActualMasterSite,
+            row.HttpStatusCode,
+            row.Market,
+            row.IsBlocked,
+            ParseOptionalDateWithSentinel(row.LastSuccessfullyVerified))).ToList();
+
+        return new GetConnectedPagesResponse(normalizedSiteUrl, pages.Count, pages, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<AddConnectedPageResponse> AddConnectedPageAsync(
+        string siteUrl,
+        string masterUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedMasterUrl = RequireText(masterUrl, nameof(masterUrl));
+
+        await PostCommandAsync(
+            "AddConnectedPage",
+            new ConnectedPageRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                MasterUrl = normalizedMasterUrl
+            },
+            BingWebmasterJsonContext.Default.ConnectedPageRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new AddConnectedPageResponse(normalizedSiteUrl, normalizedMasterUrl, true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetActivePagePreviewBlocksResponse> GetActivePagePreviewBlocksAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetActivePagePreviewBlocks",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiPagePreviewArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var blocks = rawRows.Select(row => new PagePreviewBlockEntry(
+            row.Url,
+            DecodePagePreviewBlockReason(row.BlockReason),
+            ParseRequiredDate(row.SubmitDate, nameof(row.SubmitDate)))).ToList();
+
+        return new GetActivePagePreviewBlocksResponse(normalizedSiteUrl, blocks.Count, blocks, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<AddPagePreviewBlockResponse> AddPagePreviewBlockAsync(
+        string siteUrl,
+        string url,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var reasonValue = ParsePagePreviewBlockReason(reason, nameof(reason));
+
+        await PostCommandAsync(
+            "AddPagePreviewBlock",
+            new PagePreviewBlockRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Url = normalizedUrl,
+                Reason = reasonValue
+            },
+            BingWebmasterJsonContext.Default.PagePreviewBlockRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new AddPagePreviewBlockResponse(
+            normalizedSiteUrl,
+            normalizedUrl,
+            DecodePagePreviewBlockReason(reasonValue),
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RemovePagePreviewBlockResponse> RemovePagePreviewBlockAsync(
+        string siteUrl,
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+
+        await PostCommandAsync(
+            "RemovePagePreviewBlock",
+            new SiteAndUrlRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Url = normalizedUrl
+            },
+            BingWebmasterJsonContext.Default.SiteAndUrlRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemovePagePreviewBlockResponse(normalizedSiteUrl, normalizedUrl, true, DateTimeOffset.UtcNow);
+    }
+
     internal async Task<QueryPageDetailStatsResponse> GetQueryPageDetailStatsAsync(
         string siteUrl,
         string query,
@@ -1372,6 +1684,14 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             ? null
             : ParseRequiredDate(value, "date");
 
+    private static DateTimeOffset? ParseOptionalDateWithSentinel(string? value)
+    {
+        var parsed = ParseOptionalDate(value);
+        return parsed is null || parsed == DateTimeOffset.MinValue || parsed == DateTimeOffset.UnixEpoch
+            ? null
+            : parsed;
+    }
+
     private static string RequireText(string value, string paramName)
         => string.IsNullOrWhiteSpace(value)
             ? throw new ArgumentException("Value is required.", paramName)
@@ -1485,6 +1805,48 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
         {
             0 => "CacheOnly",
             1 => "FullRemoval",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseCountryRegionSettingsType(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Page", 0),
+                ("Directory", 1),
+                ("Domain", 2),
+                ("Subdomain", 3)
+            ]);
+
+    private static string DecodeCountryRegionSettingsType(int value)
+        => value switch
+        {
+            0 => "Page",
+            1 => "Directory",
+            2 => "Domain",
+            3 => "Subdomain",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParsePagePreviewBlockReason(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("AdultContent", 1),
+                ("Copyright", 2),
+                ("IllegalContent", 3),
+                ("Other", 4)
+            ]);
+
+    private static string DecodePagePreviewBlockReason(int value)
+        => value switch
+        {
+            1 => "AdultContent",
+            2 => "Copyright",
+            3 => "IllegalContent",
+            4 => "Other",
             _ => $"Unknown({value})"
         };
 

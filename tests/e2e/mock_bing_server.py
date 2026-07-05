@@ -237,6 +237,62 @@ WEBMASTER_RESPONSES: dict[str, object] = {
     "GetRelatedKeywords": [
         {"Query": "related mock keyword", "BroadImpressions": 500, "Impressions": 300}
     ],
+    # Phase 3 -- URL normalization (query parameters).
+    "GetQueryParameters": [
+        {"Date": _MOCK_DATE, "IsEnabled": True, "Parameter": "utm_campaign", "Source": 0}
+    ],
+    "AddQueryParameter": None,
+    "RemoveQueryParameter": None,
+    "EnableDisableQueryParameter": None,
+    # Phase 3 -- geo-targeting (country/region settings). Type=2 exercises the
+    # Domain enum value (0=Page, 1=Directory, 2=Domain, 3=Subdomain).
+    "GetCountryRegionSettings": [
+        {"Date": _MOCK_DATE, "TwoLetterIsoCountryCode": "us", "Type": 2, "Url": "https://example.test/"}
+    ],
+    "AddCountryRegionSettings": None,
+    "RemoveCountryRegionSettings": None,
+    # Phase 3 -- connected pages. Real wire shape has 17 fields (ConnectedSite);
+    # only a useful subset is modeled/exposed, extra fields included here to
+    # confirm both clients tolerate an unmapped-field superset without crashing.
+    "GetConnectedPages": [
+        {
+            "Url": "https://connected.example.test/",
+            "IsVerified": True,
+            "RequestedMasterSite": "https://example.test/",
+            "ActualMasterSite": "https://example.test/",
+            "HttpStatusCode": 200,
+            "Market": "en-US",
+            "IsBlocked": False,
+            "LastSuccessfullyVerified": _MOCK_DATE,
+            "AppId": "mock-app-id",
+            "AppName": "mock-app-name",
+            "ConsecutiveFailedAttempts": 0,
+            "FailureCode": 0,
+            "FirstSuccessfullyVerified": _MOCK_DATE,
+            "UpdateTime": _MOCK_DATE,
+        }
+    ],
+    "AddConnectedPage": None,
+    # Phase 3 -- page preview blocks. BlockReason=4 ("Other") is the one value
+    # confirmed via a real recorded cassette; Action/RefreshReason/Reason/
+    # SiteUrl/UserId are real wire fields intentionally not exposed by either
+    # client (lower-confidence or redundant), included here to confirm both
+    # tolerate the extra fields without crashing.
+    "GetActivePagePreviewBlocks": [
+        {
+            "__type": "PagePreview:#Microsoft.Bing.Webmaster.Shared.DataContracts",
+            "Action": 0,
+            "BlockReason": 4,
+            "Reason": "4",
+            "RefreshReason": 0,
+            "SiteUrl": "https://example.test/",
+            "SubmitDate": _MOCK_DATE,
+            "Url": "https://example.test/blocked-preview",
+            "UserId": "mock-user-id",
+        }
+    ],
+    "AddPagePreviewBlock": None,
+    "RemovePagePreviewBlock": None,
 }
 
 # Bing method names that are fire-and-forget commands: real Bing returns
@@ -247,6 +303,9 @@ FIRE_AND_FORGET_METHODS = frozenset({
     "AddSite", "RemoveSite", "AddSiteRoles", "RemoveSiteRole", "SubmitFeed",
     "RemoveFeed", "SubmitUrl", "SubmitUrlBatch", "SubmitContent", "AddBlockedUrl",
     "RemoveBlockedUrl", "FetchUrl", "SubmitSiteMove",
+    "AddQueryParameter", "RemoveQueryParameter", "EnableDisableQueryParameter",
+    "AddCountryRegionSettings", "RemoveCountryRegionSettings", "AddConnectedPage",
+    "AddPagePreviewBlock", "RemovePagePreviewBlock",
 })
 
 

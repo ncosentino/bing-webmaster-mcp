@@ -60,6 +60,15 @@ func timePointer(value wireTime) *time.Time {
 	return &t
 }
 
+func timePointerOrNilMinDate(value wireTime) *time.Time {
+	t := value.Time.UTC()
+	if t.IsZero() || t.Equal(time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)) {
+		return nil
+	}
+
+	return &t
+}
+
 func formatDotNetDate(value time.Time) string {
 	return fmt.Sprintf("/Date(%d+0000)/", value.UTC().UnixMilli())
 }
@@ -379,6 +388,127 @@ type removeBlockedURLResult struct {
 	RequestedAt time.Time `json:"requestedAt"`
 }
 
+type queryParametersResult struct {
+	SiteURL    string           `json:"siteUrl"`
+	RowCount   int              `json:"rowCount"`
+	Parameters []queryParameter `json:"parameters"`
+	QueriedAt  time.Time        `json:"queriedAt"`
+}
+
+type queryParameter struct {
+	Parameter string     `json:"parameter"`
+	IsEnabled bool       `json:"isEnabled"`
+	Source    int        `json:"source"`
+	Date      *time.Time `json:"date,omitempty"`
+}
+
+type addQueryParameterResult struct {
+	SiteURL        string    `json:"siteUrl"`
+	QueryParameter string    `json:"queryParameter"`
+	Success        bool      `json:"success"`
+	RequestedAt    time.Time `json:"requestedAt"`
+}
+
+type removeQueryParameterResult struct {
+	SiteURL        string    `json:"siteUrl"`
+	QueryParameter string    `json:"queryParameter"`
+	Success        bool      `json:"success"`
+	RequestedAt    time.Time `json:"requestedAt"`
+}
+
+type enableDisableQueryParameterResult struct {
+	SiteURL        string    `json:"siteUrl"`
+	QueryParameter string    `json:"queryParameter"`
+	IsEnabled      bool      `json:"isEnabled"`
+	Success        bool      `json:"success"`
+	RequestedAt    time.Time `json:"requestedAt"`
+}
+
+type countryRegionSettingsResult struct {
+	SiteURL   string                 `json:"siteUrl"`
+	RowCount  int                    `json:"rowCount"`
+	Settings  []countryRegionSetting `json:"settings"`
+	QueriedAt time.Time              `json:"queriedAt"`
+}
+
+type countryRegionSetting struct {
+	TwoLetterIsoCountryCode string     `json:"twoLetterIsoCountryCode"`
+	SettingsType            string     `json:"settingsType"`
+	URL                     string     `json:"url"`
+	Date                    *time.Time `json:"date,omitempty"`
+}
+
+type addCountryRegionSettingsResult struct {
+	SiteURL                 string    `json:"siteUrl"`
+	TwoLetterIsoCountryCode string    `json:"twoLetterIsoCountryCode"`
+	SettingsType            string    `json:"settingsType"`
+	URL                     string    `json:"url"`
+	Success                 bool      `json:"success"`
+	RequestedAt             time.Time `json:"requestedAt"`
+}
+
+type removeCountryRegionSettingsResult struct {
+	SiteURL                 string    `json:"siteUrl"`
+	TwoLetterIsoCountryCode string    `json:"twoLetterIsoCountryCode"`
+	SettingsType            string    `json:"settingsType"`
+	URL                     string    `json:"url"`
+	Success                 bool      `json:"success"`
+	RequestedAt             time.Time `json:"requestedAt"`
+}
+
+type connectedPagesResult struct {
+	SiteURL   string          `json:"siteUrl"`
+	RowCount  int             `json:"rowCount"`
+	Pages     []connectedPage `json:"pages"`
+	QueriedAt time.Time       `json:"queriedAt"`
+}
+
+type connectedPage struct {
+	URL                      string     `json:"url"`
+	IsVerified               bool       `json:"isVerified"`
+	RequestedMasterSite      string     `json:"requestedMasterSite,omitempty"`
+	ActualMasterSite         string     `json:"actualMasterSite,omitempty"`
+	HTTPStatusCode           int        `json:"httpStatusCode"`
+	Market                   string     `json:"market,omitempty"`
+	IsBlocked                bool       `json:"isBlocked"`
+	LastSuccessfullyVerified *time.Time `json:"lastSuccessfullyVerified,omitempty"`
+}
+
+type addConnectedPageResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	MasterURL   string    `json:"masterUrl"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type activePagePreviewBlocksResult struct {
+	SiteURL   string             `json:"siteUrl"`
+	RowCount  int                `json:"rowCount"`
+	Blocks    []pagePreviewBlock `json:"blocks"`
+	QueriedAt time.Time          `json:"queriedAt"`
+}
+
+type pagePreviewBlock struct {
+	URL         string     `json:"url"`
+	BlockReason string     `json:"blockReason"`
+	SubmitDate  *time.Time `json:"submitDate,omitempty"`
+}
+
+type addPagePreviewBlockResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	URL         string    `json:"url"`
+	Reason      string    `json:"reason"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type removePagePreviewBlockResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	URL         string    `json:"url"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
 type queryPageDetailStatsResult struct {
 	SiteURL   string              `json:"siteUrl"`
 	Query     string              `json:"query"`
@@ -679,6 +809,37 @@ type rawBlockedURL struct {
 	URL         string   `json:"Url"`
 }
 
+type rawQueryParameter struct {
+	Date      wireTime `json:"Date"`
+	IsEnabled bool     `json:"IsEnabled"`
+	Parameter string   `json:"Parameter"`
+	Source    int      `json:"Source"`
+}
+
+type rawCountryRegionSettings struct {
+	Date                    wireTime `json:"Date"`
+	TwoLetterIsoCountryCode string   `json:"TwoLetterIsoCountryCode"`
+	Type                    int      `json:"Type"`
+	URL                     string   `json:"Url"`
+}
+
+type rawConnectedPage struct {
+	ActualMasterSite         string   `json:"ActualMasterSite"`
+	HTTPStatusCode           int      `json:"HttpStatusCode"`
+	IsBlocked                bool     `json:"IsBlocked"`
+	IsVerified               bool     `json:"IsVerified"`
+	LastSuccessfullyVerified wireTime `json:"LastSuccessfullyVerified"`
+	Market                   string   `json:"Market"`
+	RequestedMasterSite      string   `json:"RequestedMasterSite"`
+	URL                      string   `json:"Url"`
+}
+
+type rawPagePreview struct {
+	BlockReason int      `json:"BlockReason"`
+	SubmitDate  wireTime `json:"SubmitDate"`
+	URL         string   `json:"Url"`
+}
+
 type rawDetailedQueryStat struct {
 	Date        wireTime `json:"Date"`
 	Clicks      int      `json:"Clicks"`
@@ -752,6 +913,17 @@ type rawBlockedURLCommand struct {
 	URL         string `json:"Url"`
 }
 
+type rawQueryParameterCommandRequest struct {
+	SiteURL        string `json:"siteUrl"`
+	QueryParameter string `json:"queryParameter"`
+}
+
+type rawEnableDisableQueryParameterRequest struct {
+	SiteURL        string `json:"siteUrl"`
+	QueryParameter string `json:"queryParameter"`
+	IsEnabled      bool   `json:"isEnabled"`
+}
+
 type rawChildrenURLInfoRequest struct {
 	SiteURL          string              `json:"siteUrl"`
 	URL              string              `json:"url"`
@@ -777,6 +949,29 @@ type rawSiteMoveCommand struct {
 	MoveType  int    `json:"MoveType"`
 	SourceURL string `json:"SourceUrl"`
 	TargetURL string `json:"TargetUrl"`
+}
+
+type rawCountryRegionSettingsCommandRequest struct {
+	SiteURL  string                          `json:"siteUrl"`
+	Settings rawCountryRegionSettingsCommand `json:"settings"`
+}
+
+type rawCountryRegionSettingsCommand struct {
+	Date                    string `json:"Date"`
+	TwoLetterIsoCountryCode string `json:"TwoLetterIsoCountryCode"`
+	Type                    int    `json:"Type"`
+	URL                     string `json:"Url"`
+}
+
+type rawAddConnectedPageRequest struct {
+	SiteURL   string `json:"siteUrl"`
+	MasterURL string `json:"masterUrl"`
+}
+
+type rawAddPagePreviewBlockRequest struct {
+	SiteURL string `json:"siteUrl"`
+	URL     string `json:"url"`
+	Reason  int    `json:"reason"`
 }
 
 type rawSubmitContentRequest struct {
@@ -858,6 +1053,20 @@ var dynamicServingValues = []namedEnum{
 	{value: 5, name: "NonVisualBrowser"},
 }
 
+var countryRegionSettingsTypeValues = []namedEnum{
+	{value: 0, name: "Page"},
+	{value: 1, name: "Directory"},
+	{value: 2, name: "Domain"},
+	{value: 3, name: "Subdomain"},
+}
+
+var pagePreviewBlockReasonValues = []namedEnum{
+	{value: 1, name: "AdultContent"},
+	{value: 2, name: "Copyright"},
+	{value: 3, name: "IllegalContent"},
+	{value: 4, name: "Other"},
+}
+
 func decodeSiteRole(value int) string {
 	return decodeEnumValue(value, siteRoleValues)
 }
@@ -880,6 +1089,22 @@ func decodeBlockedURLRequestType(value int) string {
 
 func encodeBlockedURLRequestType(value string) (int, error) {
 	return encodeEnumValue("request_type", value, blockedURLRequestTypeValues)
+}
+
+func decodeCountryRegionSettingsType(value int) string {
+	return decodeEnumValue(value, countryRegionSettingsTypeValues)
+}
+
+func encodeCountryRegionSettingsType(value string) (int, error) {
+	return encodeEnumValue("settings_type", value, countryRegionSettingsTypeValues)
+}
+
+func decodePagePreviewBlockReason(value int) string {
+	return decodeEnumValue(value, pagePreviewBlockReasonValues)
+}
+
+func encodePagePreviewBlockReason(value string) (int, error) {
+	return encodeEnumValue("reason", value, pagePreviewBlockReasonValues)
 }
 
 func decodeMoveScope(value int) string {

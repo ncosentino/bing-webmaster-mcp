@@ -792,6 +792,308 @@ public sealed class BingWebmasterClientTests
     }
 
     [Fact]
+    public async Task GetQueryParameters_UsesSiteUrlQuery_AndParsesRows()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        const string responseJson = """{"d":[{"Date":"/Date(1732612952000+0000)/","IsEnabled":true,"Parameter":"utm_campaign","Source":0}]}""";
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            return JsonResponse(HttpStatusCode.OK, responseJson);
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.GetQueryParametersAsync("https://example.test");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(
+            "https://example.test/api/GetQueryParameters?apikey=test-key&siteUrl=https%3A%2F%2Fexample.test",
+            capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal(1, result.RowCount);
+        Assert.Single(result.Parameters);
+        Assert.Equal("utm_campaign", result.Parameters[0].Parameter);
+        Assert.True(result.Parameters[0].IsEnabled);
+        Assert.Equal(0, result.Parameters[0].Source);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(1732612952000), result.Parameters[0].Date);
+    }
+
+    [Fact]
+    public async Task AddQueryParameter_UsesPostAndCamelCaseBody()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.AddQueryParameterAsync("https://example.test", "utm_campaign");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/AddQueryParameter?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal("""{"siteUrl":"https://example.test","queryParameter":"utm_campaign"}""", body);
+        Assert.Equal("utm_campaign", result.QueryParameter);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task RemoveQueryParameter_UsesPostAndCamelCaseBody()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.RemoveQueryParameterAsync("https://example.test", "utm_campaign");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/RemoveQueryParameter?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal("""{"siteUrl":"https://example.test","queryParameter":"utm_campaign"}""", body);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task EnableDisableQueryParameter_UsesPostAndRequiredBooleanBody()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.EnableDisableQueryParameterAsync("https://example.test", "utm_campaign", false);
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/EnableDisableQueryParameter?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal("""{"siteUrl":"https://example.test","queryParameter":"utm_campaign","isEnabled":false}""", body);
+        Assert.False(result.IsEnabled);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task GetCountryRegionSettings_UsesSiteUrlQuery_AndDecodesEnums()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        const string responseJson = """{"d":[{"Date":"/Date(1732612952000+0000)/","TwoLetterIsoCountryCode":"us","Type":2,"Url":"https://example.test/"}]}""";
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            return JsonResponse(HttpStatusCode.OK, responseJson);
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.GetCountryRegionSettingsAsync("https://example.test");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(
+            "https://example.test/api/GetCountryRegionSettings?apikey=test-key&siteUrl=https%3A%2F%2Fexample.test",
+            capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Single(result.Settings);
+        Assert.Equal("Domain", result.Settings[0].SettingsType);
+        Assert.Equal("us", result.Settings[0].TwoLetterIsoCountryCode);
+    }
+
+    [Fact]
+    public async Task AddCountryRegionSettings_UsesNestedSettingsBody_AndEncodesEnums()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.AddCountryRegionSettingsAsync("https://example.test", "us", "Subdomain", "https://blog.example.test/");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/AddCountryRegionSettings?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+
+        using var document = JsonDocument.Parse(body!);
+        var settings = document.RootElement.GetProperty("settings");
+        Assert.Equal("us", settings.GetProperty("TwoLetterIsoCountryCode").GetString());
+        Assert.Equal(3, settings.GetProperty("Type").GetInt32());
+        Assert.Equal("https://blog.example.test/", settings.GetProperty("Url").GetString());
+        Assert.StartsWith("/Date(", settings.GetProperty("Date").GetString(), StringComparison.Ordinal);
+        Assert.Equal("Subdomain", result.SettingsType);
+    }
+
+    [Fact]
+    public async Task RemoveCountryRegionSettings_UsesNestedSettingsBody_AndEncodesEnums()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.RemoveCountryRegionSettingsAsync("https://example.test", "us", "Page", "https://example.test/page-a");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/RemoveCountryRegionSettings?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+
+        using var document = JsonDocument.Parse(body!);
+        var settings = document.RootElement.GetProperty("settings");
+        Assert.Equal(0, settings.GetProperty("Type").GetInt32());
+        Assert.Equal("https://example.test/page-a", settings.GetProperty("Url").GetString());
+        Assert.Equal("Page", result.SettingsType);
+    }
+
+    [Fact]
+    public async Task GetConnectedPages_UsesSiteUrlQuery_AndMapsSubset()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        const string responseJson = """{"d":[{"ActualMasterSite":"https://example.test/master","HttpStatusCode":200,"IsBlocked":true,"IsVerified":true,"LastSuccessfullyVerified":"/Date(1732612952000+0000)/","Market":"en-US","RequestedMasterSite":"https://example.test/requested","Url":"https://example.test/page-a"}]}""";
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            return JsonResponse(HttpStatusCode.OK, responseJson);
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.GetConnectedPagesAsync("https://example.test");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(
+            "https://example.test/api/GetConnectedPages?apikey=test-key&siteUrl=https%3A%2F%2Fexample.test",
+            capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Single(result.Pages);
+        Assert.Equal("https://example.test/page-a", result.Pages[0].Url);
+        Assert.True(result.Pages[0].IsBlocked);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(1732612952000), result.Pages[0].LastSuccessfullyVerified);
+    }
+
+    [Fact]
+    public async Task GetConnectedPages_TreatsEpochVerificationDateAsNull()
+    {
+        const string responseJson = """{"d":[{"HttpStatusCode":0,"IsVerified":false,"LastSuccessfullyVerified":"/Date(0+0000)/","Url":"https://example.test/page-a"}]}""";
+        var client = new BingWebmasterClient(
+            new HttpClient(new FakeMessageHandler(_ => JsonResponse(HttpStatusCode.OK, responseJson))),
+            "test-key",
+            "https://example.test/api");
+
+        var result = await client.GetConnectedPagesAsync("https://example.test");
+
+        Assert.Null(result.Pages[0].LastSuccessfullyVerified);
+    }
+
+    [Fact]
+    public async Task AddConnectedPage_UsesMasterUrlBody()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.AddConnectedPageAsync("https://example.test", "http://example.com/some-path");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/AddConnectedPage?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal("""{"siteUrl":"https://example.test","masterUrl":"http://example.com/some-path"}""", body);
+        Assert.Equal("http://example.com/some-path", result.MasterUrl);
+    }
+
+    [Fact]
+    public async Task GetActivePagePreviewBlocks_UsesSiteUrlQuery_AndDecodesReason()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        const string responseJson = """{"d":[{"BlockReason":4,"SubmitDate":"/Date(1732612952000+0000)/","Url":"https://example.test/page-a"}]}""";
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            return JsonResponse(HttpStatusCode.OK, responseJson);
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.GetActivePagePreviewBlocksAsync("https://example.test");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(
+            "https://example.test/api/GetActivePagePreviewBlocks?apikey=test-key&siteUrl=https%3A%2F%2Fexample.test",
+            capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Single(result.Blocks);
+        Assert.Equal("Other", result.Blocks[0].BlockReason);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(1732612952000), result.Blocks[0].SubmitDate);
+    }
+
+    [Fact]
+    public async Task AddPagePreviewBlock_UsesTopLevelReason_AndEncodesEnum()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.AddPagePreviewBlockAsync("https://example.test", "https://example.test/page-a", "IllegalContent");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/AddPagePreviewBlock?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal("""{"siteUrl":"https://example.test","url":"https://example.test/page-a","reason":3}""", body);
+        Assert.Equal("IllegalContent", result.Reason);
+    }
+
+    [Fact]
+    public async Task RemovePagePreviewBlock_UsesPostAndSiteUrlUrlBody()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        string? body = null;
+
+        var handler = new FakeMessageHandler(request =>
+        {
+            capturedRequest = request;
+            body = request.Content is null ? null : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonResponse(HttpStatusCode.OK, """{"d":null}""");
+        });
+
+        var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
+        var result = await client.RemovePagePreviewBlockAsync("https://example.test", "https://example.test/page-a");
+
+        Assert.NotNull(capturedRequest);
+        Assert.Equal("https://example.test/api/RemovePagePreviewBlock?apikey=test-key", capturedRequest!.RequestUri!.AbsoluteUri);
+        Assert.Equal("""{"siteUrl":"https://example.test","url":"https://example.test/page-a"}""", body);
+        Assert.True(result.Success);
+    }
+
+    [Fact]
     public async Task GetQueryPageDetailStats_UsesQueryAndPageParameters_AndParsesRows()
     {
         HttpRequestMessage? capturedRequest = null;

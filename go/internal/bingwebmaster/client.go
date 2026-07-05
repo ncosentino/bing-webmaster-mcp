@@ -641,6 +641,282 @@ func (c *Client) RemoveBlockedURL(ctx context.Context, siteURL string, blockedUR
 	}, nil
 }
 
+// GetQueryParameters returns the query parameter normalization settings for a site.
+func (c *Client) GetQueryParameters(ctx context.Context, siteURL string) (*queryParametersResult, error) {
+	var raw []rawQueryParameter
+	if err := c.get(ctx, "GetQueryParameters", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	parameters := make([]queryParameter, len(raw))
+	for i, item := range raw {
+		parameters[i] = queryParameter{
+			Parameter: item.Parameter,
+			IsEnabled: item.IsEnabled,
+			Source:    item.Source,
+			Date:      timePointer(item.Date),
+		}
+	}
+
+	return &queryParametersResult{
+		SiteURL:    siteURL,
+		RowCount:   len(parameters),
+		Parameters: parameters,
+		QueriedAt:  time.Now().UTC(),
+	}, nil
+}
+
+// AddQueryParameter adds a query parameter normalization setting for a site.
+func (c *Client) AddQueryParameter(ctx context.Context, siteURL string, queryParameter string) (*addQueryParameterResult, error) {
+	payload := rawQueryParameterCommandRequest{
+		SiteURL:        siteURL,
+		QueryParameter: queryParameter,
+	}
+	if err := c.postCommand(ctx, "AddQueryParameter", payload); err != nil {
+		return nil, err
+	}
+
+	return &addQueryParameterResult{
+		SiteURL:        siteURL,
+		QueryParameter: queryParameter,
+		Success:        true,
+		RequestedAt:    time.Now().UTC(),
+	}, nil
+}
+
+// RemoveQueryParameter removes a query parameter normalization setting for a site.
+func (c *Client) RemoveQueryParameter(ctx context.Context, siteURL string, queryParameter string) (*removeQueryParameterResult, error) {
+	payload := rawQueryParameterCommandRequest{
+		SiteURL:        siteURL,
+		QueryParameter: queryParameter,
+	}
+	if err := c.postCommand(ctx, "RemoveQueryParameter", payload); err != nil {
+		return nil, err
+	}
+
+	return &removeQueryParameterResult{
+		SiteURL:        siteURL,
+		QueryParameter: queryParameter,
+		Success:        true,
+		RequestedAt:    time.Now().UTC(),
+	}, nil
+}
+
+// EnableDisableQueryParameter enables or disables a query parameter normalization setting.
+func (c *Client) EnableDisableQueryParameter(ctx context.Context, siteURL string, queryParameter string, isEnabled bool) (*enableDisableQueryParameterResult, error) {
+	payload := rawEnableDisableQueryParameterRequest{
+		SiteURL:        siteURL,
+		QueryParameter: queryParameter,
+		IsEnabled:      isEnabled,
+	}
+	if err := c.postCommand(ctx, "EnableDisableQueryParameter", payload); err != nil {
+		return nil, err
+	}
+
+	return &enableDisableQueryParameterResult{
+		SiteURL:        siteURL,
+		QueryParameter: queryParameter,
+		IsEnabled:      isEnabled,
+		Success:        true,
+		RequestedAt:    time.Now().UTC(),
+	}, nil
+}
+
+// GetCountryRegionSettings returns geo-targeting settings for a site.
+func (c *Client) GetCountryRegionSettings(ctx context.Context, siteURL string) (*countryRegionSettingsResult, error) {
+	var raw []rawCountryRegionSettings
+	if err := c.get(ctx, "GetCountryRegionSettings", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	settings := make([]countryRegionSetting, len(raw))
+	for i, item := range raw {
+		settings[i] = countryRegionSetting{
+			TwoLetterIsoCountryCode: item.TwoLetterIsoCountryCode,
+			SettingsType:            decodeCountryRegionSettingsType(item.Type),
+			URL:                     item.URL,
+			Date:                    timePointer(item.Date),
+		}
+	}
+
+	return &countryRegionSettingsResult{
+		SiteURL:   siteURL,
+		RowCount:  len(settings),
+		Settings:  settings,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// AddCountryRegionSettings adds a geo-targeting setting for a site.
+func (c *Client) AddCountryRegionSettings(ctx context.Context, siteURL string, twoLetterIsoCountryCode string, settingsType string, settingsURL string) (*addCountryRegionSettingsResult, error) {
+	settingsTypeValue, err := encodeCountryRegionSettingsType(settingsType)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawCountryRegionSettingsCommandRequest{
+		SiteURL: siteURL,
+		Settings: rawCountryRegionSettingsCommand{
+			Date:                    formatDotNetDate(time.Now().UTC()),
+			TwoLetterIsoCountryCode: twoLetterIsoCountryCode,
+			Type:                    settingsTypeValue,
+			URL:                     settingsURL,
+		},
+	}
+	if err := c.postCommand(ctx, "AddCountryRegionSettings", payload); err != nil {
+		return nil, err
+	}
+
+	return &addCountryRegionSettingsResult{
+		SiteURL:                 siteURL,
+		TwoLetterIsoCountryCode: twoLetterIsoCountryCode,
+		SettingsType:            settingsType,
+		URL:                     settingsURL,
+		Success:                 true,
+		RequestedAt:             time.Now().UTC(),
+	}, nil
+}
+
+// RemoveCountryRegionSettings removes a geo-targeting setting for a site.
+func (c *Client) RemoveCountryRegionSettings(ctx context.Context, siteURL string, twoLetterIsoCountryCode string, settingsType string, settingsURL string) (*removeCountryRegionSettingsResult, error) {
+	settingsTypeValue, err := encodeCountryRegionSettingsType(settingsType)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawCountryRegionSettingsCommandRequest{
+		SiteURL: siteURL,
+		Settings: rawCountryRegionSettingsCommand{
+			Date:                    formatDotNetDate(time.Now().UTC()),
+			TwoLetterIsoCountryCode: twoLetterIsoCountryCode,
+			Type:                    settingsTypeValue,
+			URL:                     settingsURL,
+		},
+	}
+	if err := c.postCommand(ctx, "RemoveCountryRegionSettings", payload); err != nil {
+		return nil, err
+	}
+
+	return &removeCountryRegionSettingsResult{
+		SiteURL:                 siteURL,
+		TwoLetterIsoCountryCode: twoLetterIsoCountryCode,
+		SettingsType:            settingsType,
+		URL:                     settingsURL,
+		Success:                 true,
+		RequestedAt:             time.Now().UTC(),
+	}, nil
+}
+
+// GetConnectedPages returns connected pages for a site.
+func (c *Client) GetConnectedPages(ctx context.Context, siteURL string) (*connectedPagesResult, error) {
+	var raw []rawConnectedPage
+	if err := c.get(ctx, "GetConnectedPages", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	pages := make([]connectedPage, len(raw))
+	for i, item := range raw {
+		pages[i] = connectedPage{
+			URL:                      item.URL,
+			IsVerified:               item.IsVerified,
+			RequestedMasterSite:      item.RequestedMasterSite,
+			ActualMasterSite:         item.ActualMasterSite,
+			HTTPStatusCode:           item.HTTPStatusCode,
+			Market:                   item.Market,
+			IsBlocked:                item.IsBlocked,
+			LastSuccessfullyVerified: timePointerOrNilMinDate(item.LastSuccessfullyVerified),
+		}
+	}
+
+	return &connectedPagesResult{
+		SiteURL:   siteURL,
+		RowCount:  len(pages),
+		Pages:     pages,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// AddConnectedPage adds a connected page to a site.
+func (c *Client) AddConnectedPage(ctx context.Context, siteURL string, masterURL string) (*addConnectedPageResult, error) {
+	payload := rawAddConnectedPageRequest{
+		SiteURL:   siteURL,
+		MasterURL: masterURL,
+	}
+	if err := c.postCommand(ctx, "AddConnectedPage", payload); err != nil {
+		return nil, err
+	}
+
+	return &addConnectedPageResult{
+		SiteURL:     siteURL,
+		MasterURL:   masterURL,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
+// GetActivePagePreviewBlocks returns active page preview blocks for a site.
+func (c *Client) GetActivePagePreviewBlocks(ctx context.Context, siteURL string) (*activePagePreviewBlocksResult, error) {
+	var raw []rawPagePreview
+	if err := c.get(ctx, "GetActivePagePreviewBlocks", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	blocks := make([]pagePreviewBlock, len(raw))
+	for i, item := range raw {
+		blocks[i] = pagePreviewBlock{
+			URL:         item.URL,
+			BlockReason: decodePagePreviewBlockReason(item.BlockReason),
+			SubmitDate:  timePointer(item.SubmitDate),
+		}
+	}
+
+	return &activePagePreviewBlocksResult{
+		SiteURL:   siteURL,
+		RowCount:  len(blocks),
+		Blocks:    blocks,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// AddPagePreviewBlock adds a page preview block for a site URL.
+func (c *Client) AddPagePreviewBlock(ctx context.Context, siteURL string, pageURL string, reason string) (*addPagePreviewBlockResult, error) {
+	reasonValue, err := encodePagePreviewBlockReason(reason)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawAddPagePreviewBlockRequest{
+		SiteURL: siteURL,
+		URL:     pageURL,
+		Reason:  reasonValue,
+	}
+	if err := c.postCommand(ctx, "AddPagePreviewBlock", payload); err != nil {
+		return nil, err
+	}
+
+	return &addPagePreviewBlockResult{
+		SiteURL:     siteURL,
+		URL:         pageURL,
+		Reason:      reason,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
+// RemovePagePreviewBlock removes a page preview block for a site URL.
+func (c *Client) RemovePagePreviewBlock(ctx context.Context, siteURL string, pageURL string) (*removePagePreviewBlockResult, error) {
+	if err := c.postCommand(ctx, "RemovePagePreviewBlock", map[string]string{"siteUrl": siteURL, "url": pageURL}); err != nil {
+		return nil, err
+	}
+
+	return &removePagePreviewBlockResult{
+		SiteURL:     siteURL,
+		URL:         pageURL,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
 // GetQueryPageDetailStats returns daily stats for a specific query/page pair.
 func (c *Client) GetQueryPageDetailStats(ctx context.Context, siteURL string, query string, page string) (*queryPageDetailStatsResult, error) {
 	var raw []rawDetailedQueryStat
