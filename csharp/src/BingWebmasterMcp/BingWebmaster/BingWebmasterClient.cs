@@ -44,25 +44,25 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
     internal async Task<AddSiteResponse> AddSiteAsync(string siteUrl, CancellationToken cancellationToken = default)
     {
         var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
-        var success = await PostEnvelopeAsync(
+        await PostCommandAsync(
             "AddSite",
             new SiteUrlRequest { SiteUrl = normalizedSiteUrl },
             BingWebmasterJsonContext.Default.SiteUrlRequest,
             cancellationToken).ConfigureAwait(false);
 
-        return new AddSiteResponse(normalizedSiteUrl, success, DateTimeOffset.UtcNow);
+        return new AddSiteResponse(normalizedSiteUrl, true, DateTimeOffset.UtcNow);
     }
 
     internal async Task<VerifySiteResponse> VerifySiteAsync(string siteUrl, CancellationToken cancellationToken = default)
     {
         var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
-        var success = await PostEnvelopeAsync(
+        var verified = await PostQueryAsync(
             "VerifySite",
             new SiteUrlRequest { SiteUrl = normalizedSiteUrl },
             BingWebmasterJsonContext.Default.SiteUrlRequest,
             cancellationToken).ConfigureAwait(false);
 
-        return new VerifySiteResponse(normalizedSiteUrl, success, DateTimeOffset.UtcNow);
+        return new VerifySiteResponse(normalizedSiteUrl, verified, DateTimeOffset.UtcNow);
     }
 
     internal async Task<ListSitemapsResponse> ListSitemapsAsync(string siteUrl, CancellationToken cancellationToken = default)
@@ -137,7 +137,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
     {
         var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
         var normalizedFeedUrl = RequireText(feedUrl, nameof(feedUrl));
-        var success = await PostEnvelopeAsync(
+        await PostCommandAsync(
             "SubmitFeed",
             new SiteAndFeedRequest
             {
@@ -147,7 +147,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             BingWebmasterJsonContext.Default.SiteAndFeedRequest,
             cancellationToken).ConfigureAwait(false);
 
-        return new SubmitSitemapResponse(normalizedSiteUrl, normalizedFeedUrl, success, DateTimeOffset.UtcNow);
+        return new SubmitSitemapResponse(normalizedSiteUrl, normalizedFeedUrl, true, DateTimeOffset.UtcNow);
     }
 
     internal async Task<SubmitUrlResponse> SubmitUrlAsync(
@@ -157,7 +157,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
     {
         var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
         var normalizedUrl = RequireText(url, nameof(url));
-        var success = await PostEnvelopeAsync(
+        await PostCommandAsync(
             "SubmitUrl",
             new SiteAndUrlRequest
             {
@@ -167,7 +167,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             BingWebmasterJsonContext.Default.SiteAndUrlRequest,
             cancellationToken).ConfigureAwait(false);
 
-        return new SubmitUrlResponse(normalizedSiteUrl, normalizedUrl, success, DateTimeOffset.UtcNow);
+        return new SubmitUrlResponse(normalizedSiteUrl, normalizedUrl, true, DateTimeOffset.UtcNow);
     }
 
     internal async Task<SubmitUrlBatchResponse> SubmitUrlBatchAsync(
@@ -177,7 +177,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
     {
         var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
         var normalizedUrls = NormalizeUrlList(urlList, 500);
-        var success = await PostEnvelopeAsync(
+        await PostCommandAsync(
             "SubmitUrlBatch",
             new SiteAndUrlListRequest
             {
@@ -191,7 +191,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             normalizedSiteUrl,
             normalizedUrls,
             normalizedUrls.Count,
-            success,
+            true,
             DateTimeOffset.UtcNow);
     }
 
@@ -572,7 +572,7 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
         return await DeserializeEnvelopeAsync(response, typeInfo, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<bool> PostEnvelopeAsync<TBody>(
+    private async Task<bool> PostQueryAsync<TBody>(
         string methodName,
         TBody body,
         JsonTypeInfo<TBody> typeInfo,
@@ -587,6 +587,32 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         return await DeserializeEnvelopeAsync(response, BingWebmasterJsonContext.Default.Boolean, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Issues a POST for a fire-and-forget command whose "d" payload is not a reliable success
+    /// indicator (confirmed empirically: Bing's AddSite endpoint returns "d":null both for a
+    /// brand-new site and a no-op repeat of an already-added site -- there is no real boolean to
+    /// read). The payload is read and discarded; success means the HTTP call completed without
+    /// the client throwing.
+    /// </summary>
+    private async Task PostCommandAsync<TBody>(
+        string methodName,
+        TBody body,
+        JsonTypeInfo<TBody> typeInfo,
+        CancellationToken cancellationToken)
+    {
+        var jsonBody = JsonSerializer.Serialize(body, typeInfo);
+        var request = new HttpRequestMessage(HttpMethod.Post, BuildUrl(methodName, null))
+        {
+            Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+        };
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
+        using var document = await ReadEnvelopeDocumentAsync(response, cancellationToken).ConfigureAwait(false);
+        // Intentionally discard document.RootElement.GetProperty("d") -- it carries no reliable
+        // signal for this class of command.
     }
 
     private async Task<T?> DeserializeEnvelopeAsync<T>(

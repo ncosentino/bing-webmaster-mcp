@@ -19,7 +19,7 @@ internal sealed record AddSiteResponse(
 
 internal sealed record VerifySiteResponse(
     string SiteUrl,
-    bool Success,
+    bool Verified,
     DateTimeOffset RequestedAt);
 
 internal sealed record SitemapInfo(

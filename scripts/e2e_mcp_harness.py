@@ -261,6 +261,16 @@ if __name__ == "__main__":
         default=None,
         help="Substitute this for the https://example.test/ placeholder in every tool call.",
     )
+    parser.add_argument(
+        "--call",
+        action="append",
+        nargs=2,
+        metavar=("TOOL_NAME", "JSON_ARGS"),
+        help="Make exactly this tool call instead of running the full TOOL_CALLS battery. "
+        "Repeatable. Example: --call add_site '{\"site_url\": \"https://example.com/\"}'. "
+        "Bypasses --read-only filtering -- you are explicitly naming the call, so be sure "
+        "you have authorization for whatever tool you name here.",
+    )
     args = parser.parse_args()
 
     import os
@@ -270,7 +280,28 @@ if __name__ == "__main__":
     if args.indexnow_key:
         env["BING_INDEXNOW_KEY"] = args.indexnow_key
 
-    results = run(args.label, args.command, env, read_only=args.read_only, site_url=args.site_url)
+    if args.call:
+        explicit_calls = [(name, json.loads(raw_args)) for name, raw_args in args.call]
+        print(f"\n{'=' * 70}\n{args.label}  [EXPLICIT CALLS: {[n for n, _ in explicit_calls]}]\n{'=' * 70}")
+        client = McpClient(args.command, env)
+        results = {"calls": {}}
+        try:
+            init = client.initialize()
+            print(f"initialize OK -- serverInfo={init.get('result', {}).get('serverInfo', {})}")
+            for name, call_args in explicit_calls:
+                resp = client.call_tool(name, call_args)
+                if "error" in resp:
+                    results["calls"][name] = {"protocol_error": resp["error"]}
+                    print(f"  [PROTOCOL ERROR] {name}: {resp['error']}")
+                    continue
+                content = resp.get("result", {}).get("content", [])
+                text = content[0]["text"] if content else "<no content>"
+                results["calls"][name] = {"raw_text": text}
+                print(f"  [OK] {name}: {text}")
+        finally:
+            client.close()
+    else:
+        results = run(args.label, args.command, env, read_only=args.read_only, site_url=args.site_url)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

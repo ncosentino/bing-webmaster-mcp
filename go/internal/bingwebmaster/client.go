@@ -63,17 +63,20 @@ func (c *Client) ListSites(ctx context.Context) (*siteList, error) {
 
 // AddSite adds a site to Bing Webmaster Tools.
 func (c *Client) AddSite(ctx context.Context, siteURL string) (*addSiteResult, error) {
-	ok, err := c.postAck(ctx, "AddSite", map[string]string{"siteUrl": siteURL})
-	if err != nil {
+	// Bing's AddSite "d" payload is not a reliable success indicator -- empirically it returns
+	// "d":null both for a brand-new site and a no-op repeat of an already-added site. Success is
+	// defined as "the HTTP call completed without error"; confirm the actual outcome via
+	// ListSites if you need to know whether the site is present.
+	if err := c.postCommand(ctx, "AddSite", map[string]string{"siteUrl": siteURL}); err != nil {
 		return nil, err
 	}
 
-	return &addSiteResult{SiteURL: siteURL, Success: ok, RequestedAt: time.Now().UTC()}, nil
+	return &addSiteResult{SiteURL: siteURL, Success: true, RequestedAt: time.Now().UTC()}, nil
 }
 
 // VerifySite verifies a site in Bing Webmaster Tools.
 func (c *Client) VerifySite(ctx context.Context, siteURL string) (*verifySiteResult, error) {
-	verified, err := c.postAck(ctx, "VerifySite", map[string]string{"siteUrl": siteURL})
+	verified, err := c.postQuery(ctx, "VerifySite", map[string]string{"siteUrl": siteURL})
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +84,6 @@ func (c *Client) VerifySite(ctx context.Context, siteURL string) (*verifySiteRes
 	return &verifySiteResult{
 		SiteURL:     siteURL,
 		Verified:    verified,
-		Success:     verified,
 		RequestedAt: time.Now().UTC(),
 	}, nil
 }
@@ -154,30 +156,28 @@ func parseFeedDetailsPayload(payload json.RawMessage) (*feed, error) {
 
 // SubmitSitemap submits a sitemap feed to Bing Webmaster Tools.
 func (c *Client) SubmitSitemap(ctx context.Context, siteURL string, feedURL string) (*submitSitemapResult, error) {
-	ok, err := c.postAck(ctx, "SubmitFeed", map[string]string{"siteUrl": siteURL, "feedUrl": feedURL})
-	if err != nil {
+	if err := c.postCommand(ctx, "SubmitFeed", map[string]string{"siteUrl": siteURL, "feedUrl": feedURL}); err != nil {
 		return nil, err
 	}
 
 	return &submitSitemapResult{
 		SiteURL:     siteURL,
 		FeedURL:     feedURL,
-		Success:     ok,
+		Success:     true,
 		SubmittedAt: time.Now().UTC(),
 	}, nil
 }
 
 // SubmitURL submits a single URL to Bing Webmaster Tools.
 func (c *Client) SubmitURL(ctx context.Context, siteURL string, submittedURL string) (*submitURLResult, error) {
-	ok, err := c.postAck(ctx, "SubmitUrl", map[string]string{"siteUrl": siteURL, "url": submittedURL})
-	if err != nil {
+	if err := c.postCommand(ctx, "SubmitUrl", map[string]string{"siteUrl": siteURL, "url": submittedURL}); err != nil {
 		return nil, err
 	}
 
 	return &submitURLResult{
 		SiteURL:     siteURL,
 		URL:         submittedURL,
-		Success:     ok,
+		Success:     true,
 		SubmittedAt: time.Now().UTC(),
 	}, nil
 }
@@ -188,8 +188,7 @@ func (c *Client) SubmitURLBatch(ctx context.Context, siteURL string, urlList []s
 		return nil, fmt.Errorf("urlList contains %d URLs; Bing SubmitUrlBatch supports at most 500", len(urlList))
 	}
 
-	ok, err := c.postAck(ctx, "SubmitUrlBatch", map[string]any{"siteUrl": siteURL, "urlList": urlList})
-	if err != nil {
+	if err := c.postCommand(ctx, "SubmitUrlBatch", map[string]any{"siteUrl": siteURL, "urlList": urlList}); err != nil {
 		return nil, err
 	}
 
@@ -197,7 +196,7 @@ func (c *Client) SubmitURLBatch(ctx context.Context, siteURL string, urlList []s
 		SiteURL:        siteURL,
 		URLList:        urlList,
 		SubmittedCount: len(urlList),
-		Success:        ok,
+		Success:        true,
 		SubmittedAt:    time.Now().UTC(),
 	}, nil
 }
@@ -485,13 +484,25 @@ func (c *Client) get(ctx context.Context, methodName string, params map[string]s
 	return c.do(req, dest)
 }
 
-func (c *Client) postAck(ctx context.Context, methodName string, body any) (bool, error) {
-	var acknowledged bool
-	if err := c.post(ctx, methodName, body, &acknowledged); err != nil {
+// postQuery issues a POST for a command whose "d" payload is a genuine, meaningful boolean
+// answer (e.g. VerifySite: "was this site actually verified?").
+func (c *Client) postQuery(ctx context.Context, methodName string, body any) (bool, error) {
+	var answer bool
+	if err := c.post(ctx, methodName, body, &answer); err != nil {
 		return false, err
 	}
 
-	return acknowledged, nil
+	return answer, nil
+}
+
+// postCommand issues a POST for a fire-and-forget command whose "d" payload is not a reliable
+// success indicator (confirmed empirically: Bing's AddSite endpoint returns "d":null both for a
+// brand-new site and a no-op repeat of an already-added site -- there is no real boolean to
+// read). The "d" payload is read into a RawMessage and discarded; success means the HTTP call
+// completed without the client throwing an error.
+func (c *Client) postCommand(ctx context.Context, methodName string, body any) error {
+	var discarded json.RawMessage
+	return c.post(ctx, methodName, body, &discarded)
 }
 
 func (c *Client) post(ctx context.Context, methodName string, payload any, dest any) error {

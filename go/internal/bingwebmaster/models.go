@@ -80,7 +80,6 @@ type addSiteResult struct {
 type verifySiteResult struct {
 	SiteURL     string    `json:"siteUrl"`
 	Verified    bool      `json:"verified"`
-	Success     bool      `json:"success"`
 	RequestedAt time.Time `json:"requestedAt"`
 }
 

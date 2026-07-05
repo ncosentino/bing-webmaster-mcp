@@ -50,7 +50,12 @@ func TestListSites_BuildsRequestAndMapsResponse(t *testing.T) {
 	}
 }
 
-func TestAddSite_SendsPOSTBody(t *testing.T) {
+func TestAddSite_TreatsNullPayloadAsSuccess_MatchingRealBingBehavior(t *testing.T) {
+	// Regression test: real Bing "d":null payload (observed live for both a fresh add and a
+	// no-op repeat of an already-added site) previously got silently coerced to Success=false
+	// because Go's json.Unmarshal leaves a bool destination unchanged (at its zero value) when
+	// given JSON null. AddSite has no reliable boolean signal -- success means the HTTP call
+	// completed without error.
 	previousBaseURL := apiBaseURL
 	t.Cleanup(func() { apiBaseURL = previousBaseURL })
 
@@ -64,7 +69,7 @@ func TestAddSite_SendsPOSTBody(t *testing.T) {
 			t.Fatalf("decode body: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"d":true}`))
+		_, _ = w.Write([]byte(`{"d":null}`))
 	}))
 	defer srv.Close()
 
@@ -130,9 +135,6 @@ func TestVerifySite_SendsPOSTBody(t *testing.T) {
 	}
 	if !result.Verified {
 		t.Fatal("expected Verified true")
-	}
-	if !result.Success {
-		t.Fatal("expected Success true")
 	}
 }
 

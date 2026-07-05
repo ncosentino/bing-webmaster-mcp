@@ -184,8 +184,12 @@ public sealed class BingWebmasterClientTests
     }
 
     [Fact]
-    public async Task AddSite_UsesPostAndCamelCaseBody_AndDeserializesEnvelope()
+    public async Task AddSite_TreatsNullPayloadAsSuccess_MatchingRealBingBehavior()
     {
+        // Regression test: real Bing "d":null payload (observed live for both a fresh add and a
+        // no-op repeat of an already-added site) previously threw a JsonException because the
+        // client tried to deserialize it as a bool. AddSite has no reliable boolean signal --
+        // success means the HTTP call completed without error.
         HttpRequestMessage? capturedRequest = null;
         string? body = null;
 
@@ -195,7 +199,7 @@ public sealed class BingWebmasterClientTests
             body = request.Content is null
                 ? null
                 : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            return JsonResponse(HttpStatusCode.OK, """{"d": true}""");
+            return JsonResponse(HttpStatusCode.OK, """{"d": null}""");
         });
 
         var client = new BingWebmasterClient(new HttpClient(handler), "test-key", "https://example.test/api");
@@ -246,7 +250,7 @@ public sealed class BingWebmasterClientTests
         Assert.Equal("https://example.test/api/VerifySite?apikey=test-key", capturedRequest.RequestUri!.AbsoluteUri);
         Assert.Equal("""{"siteUrl":"https://example.test"}""", body);
         Assert.Equal("https://example.test", result.SiteUrl);
-        Assert.True(result.Success);
+        Assert.True(result.Verified);
     }
 
     [Fact]
