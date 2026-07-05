@@ -520,6 +520,657 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             DateTimeOffset.UtcNow);
     }
 
+    internal async Task<RemoveSiteResponse> RemoveSiteAsync(string siteUrl, CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        await PostCommandAsync(
+            "RemoveSite",
+            new SiteUrlRequest { SiteUrl = normalizedSiteUrl },
+            BingWebmasterJsonContext.Default.SiteUrlRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemoveSiteResponse(normalizedSiteUrl, true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetSiteRolesResponse> GetSiteRolesAsync(
+        string siteUrl,
+        bool includeAllSubdomains,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRoles = await GetEnvelopeAsync(
+            "GetSiteRoles",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl,
+                ["includeAllSubdomains"] = ToBooleanString(includeAllSubdomains)
+            },
+            BingWebmasterJsonContext.Default.ApiSiteRoleArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRoles.Select(role => new SiteRoleEntry(
+            role.Email,
+            DecodeRole(role.Role),
+            role.Site,
+            role.VerificationSite,
+            role.Expired,
+            role.DelegatorEmail,
+            role.DelegatedCode,
+            role.DelegatedCodeOwnerEmail,
+            ParseRequiredDate(role.Date, nameof(role.Date)))).ToList();
+
+        return new GetSiteRolesResponse(
+            normalizedSiteUrl,
+            includeAllSubdomains,
+            rows.Count,
+            rows,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<AddSiteRoleResponse> AddSiteRoleAsync(
+        string siteUrl,
+        string delegatedUrl,
+        string userEmail,
+        string authenticationCode,
+        bool isAdministrator,
+        bool isReadOnly,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedDelegatedUrl = RequireText(delegatedUrl, nameof(delegatedUrl));
+        var normalizedUserEmail = RequireText(userEmail, nameof(userEmail));
+        var normalizedAuthenticationCode = RequireText(authenticationCode, nameof(authenticationCode));
+
+        await PostCommandAsync(
+            "AddSiteRoles",
+            new AddSiteRoleRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                DelegatedUrl = normalizedDelegatedUrl,
+                UserEmail = normalizedUserEmail,
+                AuthenticationCode = normalizedAuthenticationCode,
+                IsAdministrator = isAdministrator,
+                IsReadOnly = isReadOnly
+            },
+            BingWebmasterJsonContext.Default.AddSiteRoleRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new AddSiteRoleResponse(
+            normalizedSiteUrl,
+            normalizedDelegatedUrl,
+            normalizedUserEmail,
+            isAdministrator,
+            isReadOnly,
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RemoveSiteRoleResponse> RemoveSiteRoleAsync(
+        string siteUrl,
+        string email,
+        string role,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedEmail = RequireText(email, nameof(email));
+        var roleValue = ParseRole(role, nameof(role));
+        var requestDate = DateTimeOffset.UtcNow;
+
+        await PostCommandAsync(
+            "RemoveSiteRole",
+            new RemoveSiteRoleRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                SiteRole = new RemoveSiteRoleItem
+                {
+                    // Bing documents a SiteRole object here but does not confirm which fields are
+                    // required to identify the role for removal. We mirror the existing site + role
+                    // identity fields and synthesize Date/VerificationSite from the current request
+                    // so callers can use a stable remove_site_role(site_url, email, role) contract.
+                    Date = BingDateParser.Format(requestDate),
+                    Email = normalizedEmail,
+                    Role = roleValue,
+                    Site = normalizedSiteUrl,
+                    VerificationSite = normalizedSiteUrl
+                }
+            },
+            BingWebmasterJsonContext.Default.RemoveSiteRoleRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemoveSiteRoleResponse(normalizedSiteUrl, normalizedEmail, DecodeRole(roleValue), true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetBlockedUrlsResponse> GetBlockedUrlsAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetBlockedUrls",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiBlockedUrlArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(row => new BlockedUrlEntry(
+            row.Url,
+            DecodeEntityType(row.EntityType),
+            DecodeRequestType(row.RequestType),
+            ParseRequiredDate(row.Date, nameof(row.Date)))).ToList();
+
+        return new GetBlockedUrlsResponse(normalizedSiteUrl, rows.Count, rows, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<AddBlockedUrlResponse> AddBlockedUrlAsync(
+        string siteUrl,
+        string url,
+        string entityType = "Page",
+        string requestType = "CacheOnly",
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var entityTypeValue = ParseEntityType(entityType, nameof(entityType));
+        var requestTypeValue = ParseRequestType(requestType, nameof(requestType));
+        var requestDate = DateTimeOffset.UtcNow;
+
+        await PostCommandAsync(
+            "AddBlockedUrl",
+            new BlockedUrlRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                BlockedUrl = new ApiBlockedUrl
+                {
+                    Date = BingDateParser.Format(requestDate),
+                    EntityType = entityTypeValue,
+                    RequestType = requestTypeValue,
+                    Url = normalizedUrl
+                }
+            },
+            BingWebmasterJsonContext.Default.BlockedUrlRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new AddBlockedUrlResponse(
+            normalizedSiteUrl,
+            normalizedUrl,
+            DecodeEntityType(entityTypeValue),
+            DecodeRequestType(requestTypeValue),
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RemoveBlockedUrlResponse> RemoveBlockedUrlAsync(
+        string siteUrl,
+        string url,
+        string entityType = "Page",
+        string requestType = "FullRemoval",
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var entityTypeValue = ParseEntityType(entityType, nameof(entityType));
+        var requestTypeValue = ParseRequestType(requestType, nameof(requestType));
+        var requestDate = DateTimeOffset.UtcNow;
+
+        await PostCommandAsync(
+            "RemoveBlockedUrl",
+            new BlockedUrlRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                BlockedUrl = new ApiBlockedUrl
+                {
+                    Date = BingDateParser.Format(requestDate),
+                    EntityType = entityTypeValue,
+                    RequestType = requestTypeValue,
+                    Url = normalizedUrl
+                }
+            },
+            BingWebmasterJsonContext.Default.BlockedUrlRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemoveBlockedUrlResponse(
+            normalizedSiteUrl,
+            normalizedUrl,
+            DecodeEntityType(entityTypeValue),
+            DecodeRequestType(requestTypeValue),
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<QueryPageDetailStatsResponse> GetQueryPageDetailStatsAsync(
+        string siteUrl,
+        string query,
+        string page,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedQuery = RequireText(query, nameof(query));
+        var normalizedPage = RequireText(page, nameof(page));
+        var rawRows = await GetEnvelopeAsync(
+            "GetQueryPageDetailStats",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl,
+                ["query"] = normalizedQuery,
+                ["page"] = normalizedPage
+            },
+            BingWebmasterJsonContext.Default.ApiDetailedQueryStatArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(row => new DetailedQueryStatEntry(
+            ParseRequiredDate(row.Date, nameof(row.Date)),
+            row.Clicks,
+            row.Impressions,
+            row.Position)).ToList();
+
+        return new QueryPageDetailStatsResponse(
+            normalizedSiteUrl,
+            normalizedQuery,
+            normalizedPage,
+            rows.Count,
+            rows,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<QueryTrafficStatsResponse> GetQueryTrafficStatsAsync(
+        string siteUrl,
+        string query,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedQuery = RequireText(query, nameof(query));
+        var rawRows = await GetEnvelopeAsync(
+            "GetQueryTrafficStats",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl,
+                ["query"] = normalizedQuery
+            },
+            BingWebmasterJsonContext.Default.ApiRankAndTrafficStatArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(stat => new RankAndTrafficStatEntry(
+            ParseRequiredDate(stat.Date, nameof(stat.Date)),
+            stat.Clicks,
+            stat.Impressions)).ToList();
+
+        return new QueryTrafficStatsResponse(normalizedSiteUrl, normalizedQuery, rows.Count, rows, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetKeywordResponse> GetKeywordAsync(
+        string query,
+        string country,
+        string language,
+        string startDate,
+        string endDate,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedQuery = RequireText(query, nameof(query));
+        var normalizedCountry = RequireText(country, nameof(country));
+        var normalizedLanguage = RequireText(language, nameof(language));
+        var normalizedStartDate = RequireIsoDate(startDate, nameof(startDate));
+        var normalizedEndDate = RequireIsoDate(endDate, nameof(endDate));
+        var rawKeyword = await GetEnvelopeAsync(
+            "GetKeyword",
+            new Dictionary<string, string?>
+            {
+                ["q"] = normalizedQuery,
+                ["country"] = normalizedCountry,
+                ["language"] = normalizedLanguage,
+                ["startDate"] = normalizedStartDate,
+                ["endDate"] = normalizedEndDate
+            },
+            BingWebmasterJsonContext.Default.ApiKeywordDetails,
+            cancellationToken).ConfigureAwait(false);
+
+        var found = !string.IsNullOrWhiteSpace(rawKeyword?.Query);
+        return new GetKeywordResponse(
+            normalizedQuery,
+            normalizedCountry,
+            normalizedLanguage,
+            normalizedStartDate,
+            normalizedEndDate,
+            found,
+            found ? rawKeyword!.Impressions : 0,
+            found ? rawKeyword!.BroadImpressions : 0,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RelatedKeywordsResponse> GetRelatedKeywordsAsync(
+        string query,
+        string country,
+        string language,
+        string startDate,
+        string endDate,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedQuery = RequireText(query, nameof(query));
+        var normalizedCountry = RequireText(country, nameof(country));
+        var normalizedLanguage = RequireText(language, nameof(language));
+        var normalizedStartDate = RequireIsoDate(startDate, nameof(startDate));
+        var normalizedEndDate = RequireIsoDate(endDate, nameof(endDate));
+        var rawRows = await GetEnvelopeAsync(
+            "GetRelatedKeywords",
+            new Dictionary<string, string?>
+            {
+                ["q"] = normalizedQuery,
+                ["country"] = normalizedCountry,
+                ["language"] = normalizedLanguage,
+                ["startDate"] = normalizedStartDate,
+                ["endDate"] = normalizedEndDate
+            },
+            BingWebmasterJsonContext.Default.ApiKeywordDetailsArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows
+            .Where(row => !string.IsNullOrWhiteSpace(row.Query))
+            .Select(row => new RelatedKeywordEntry(row.Query!, row.Impressions, row.BroadImpressions))
+            .ToList();
+
+        return new RelatedKeywordsResponse(
+            normalizedQuery,
+            normalizedCountry,
+            normalizedLanguage,
+            normalizedStartDate,
+            normalizedEndDate,
+            rows.Count,
+            rows,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<ChildrenUrlInfoResponse> GetChildrenUrlInfoAsync(
+        string siteUrl,
+        string url,
+        int page = 0,
+        string crawlDateFilter = "Any",
+        string discoveredDateFilter = "Any",
+        string docFlagsFilter = "Any",
+        string httpCodeFilter = "Any",
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        RequireNonNegative(page, nameof(page));
+        var crawlDateFilterValue = ParseCrawlDateFilter(crawlDateFilter, nameof(crawlDateFilter));
+        var discoveredDateFilterValue = ParseDiscoveredDateFilter(discoveredDateFilter, nameof(discoveredDateFilter));
+        var docFlagsFilterValue = ParseDocFlagsFilter(docFlagsFilter, nameof(docFlagsFilter));
+        var httpCodeFilterValue = ParseHttpCodeFilter(httpCodeFilter, nameof(httpCodeFilter));
+
+        var rawRows = await PostEnvelopeAsync(
+            "GetChildrenUrlInfo",
+            new ChildrenUrlInfoRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Url = normalizedUrl,
+                Page = page,
+                FilterProperties = new ApiFilterProperties
+                {
+                    CrawlDateFilter = crawlDateFilterValue,
+                    DiscoveredDateFilter = discoveredDateFilterValue,
+                    DocFlagsFilters = docFlagsFilterValue,
+                    HttpCodeFilters = httpCodeFilterValue
+                }
+            },
+            BingWebmasterJsonContext.Default.ChildrenUrlInfoRequest,
+            BingWebmasterJsonContext.Default.ApiUrlInfoArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(ToChildUrlInfoEntry).ToList();
+        return new ChildrenUrlInfoResponse(
+            normalizedSiteUrl,
+            normalizedUrl,
+            page,
+            DecodeCrawlDateFilter(crawlDateFilterValue),
+            DecodeDiscoveredDateFilter(discoveredDateFilterValue),
+            DecodeDocFlagsFilter(docFlagsFilterValue),
+            DecodeHttpCodeFilter(httpCodeFilterValue),
+            rows.Count,
+            rows,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<ChildrenUrlTrafficInfoResponse> GetChildrenUrlTrafficInfoAsync(
+        string siteUrl,
+        string url,
+        int page = 0,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        RequireNonNegative(page, nameof(page));
+
+        var rawRows = await GetEnvelopeAsync(
+            "GetChildrenUrlTrafficInfo",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl,
+                ["url"] = normalizedUrl,
+                ["page"] = page.ToString(CultureInfo.InvariantCulture)
+            },
+            BingWebmasterJsonContext.Default.ApiUrlTrafficInfoArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(ToChildUrlTrafficInfoEntry).ToList();
+        return new ChildrenUrlTrafficInfoResponse(normalizedSiteUrl, normalizedUrl, page, rows.Count, rows, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<FetchUrlResponse> FetchUrlAsync(
+        string siteUrl,
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+
+        await PostCommandAsync(
+            "FetchUrl",
+            new SiteAndUrlRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Url = normalizedUrl
+            },
+            BingWebmasterJsonContext.Default.SiteAndUrlRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new FetchUrlResponse(normalizedSiteUrl, normalizedUrl, true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<ListFetchedUrlsResponse> ListFetchedUrlsAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetFetchedUrls",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiFetchedUrlArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(row => new FetchedUrlEntry(
+            row.Url,
+            ParseRequiredDate(row.Date, nameof(row.Date)),
+            row.Fetched,
+            row.Expired)).ToList();
+
+        return new ListFetchedUrlsResponse(normalizedSiteUrl, rows.Count, rows, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<FetchedUrlDetailsResponse> GetFetchedUrlDetailsAsync(
+        string siteUrl,
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var rawDetails = await GetEnvelopeAsync(
+            "GetFetchedUrlDetails",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl,
+                ["url"] = normalizedUrl
+            },
+            BingWebmasterJsonContext.Default.ApiFetchedUrlDetails,
+            cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Bing returned an empty fetched URL details payload.");
+
+        return new FetchedUrlDetailsResponse(
+            normalizedSiteUrl,
+            rawDetails.Url,
+            ParseRequiredDate(rawDetails.Date, nameof(rawDetails.Date)),
+            rawDetails.Status,
+            rawDetails.Headers,
+            rawDetails.Document,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<RemoveSitemapResponse> RemoveSitemapAsync(
+        string siteUrl,
+        string feedUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedFeedUrl = RequireText(feedUrl, nameof(feedUrl));
+        await PostCommandAsync(
+            "RemoveFeed",
+            new SiteAndFeedRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                FeedUrl = normalizedFeedUrl
+            },
+            BingWebmasterJsonContext.Default.SiteAndFeedRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new RemoveSitemapResponse(normalizedSiteUrl, normalizedFeedUrl, true, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<GetSiteMovesResponse> GetSiteMovesAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawRows = await GetEnvelopeAsync(
+            "GetSiteMoves",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiSiteMoveSettingsArray,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+        var rows = rawRows.Select(row => new SiteMoveEntry(
+            ParseRequiredDate(row.Date, nameof(row.Date)),
+            DecodeMoveScope(row.MoveScope),
+            DecodeMoveType(row.MoveType),
+            row.SourceUrl,
+            row.TargetUrl)).ToList();
+
+        return new GetSiteMovesResponse(normalizedSiteUrl, rows.Count, rows, DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<SubmitSiteMoveResponse> SubmitSiteMoveAsync(
+        string siteUrl,
+        string sourceUrl,
+        string targetUrl,
+        string moveType = "Local",
+        string moveScope = "Domain",
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedSourceUrl = RequireText(sourceUrl, nameof(sourceUrl));
+        var normalizedTargetUrl = RequireText(targetUrl, nameof(targetUrl));
+        var moveTypeValue = ParseMoveType(moveType, nameof(moveType));
+        var moveScopeValue = ParseMoveScope(moveScope, nameof(moveScope));
+        var requestDate = DateTimeOffset.UtcNow;
+
+        await PostCommandAsync(
+            "SubmitSiteMove",
+            new SubmitSiteMoveRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Settings = new ApiSiteMoveSettings
+                {
+                    Date = BingDateParser.Format(requestDate),
+                    MoveScope = moveScopeValue,
+                    MoveType = moveTypeValue,
+                    SourceUrl = normalizedSourceUrl,
+                    TargetUrl = normalizedTargetUrl
+                }
+            },
+            BingWebmasterJsonContext.Default.SubmitSiteMoveRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new SubmitSiteMoveResponse(
+            normalizedSiteUrl,
+            normalizedSourceUrl,
+            normalizedTargetUrl,
+            DecodeMoveType(moveTypeValue),
+            DecodeMoveScope(moveScopeValue),
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<SubmitContentResponse> SubmitContentAsync(
+        string siteUrl,
+        string url,
+        string httpMessage,
+        string structuredData,
+        string dynamicServing = "None",
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var normalizedUrl = RequireText(url, nameof(url));
+        var normalizedHttpMessage = RequireText(httpMessage, nameof(httpMessage));
+        var normalizedStructuredData = RequireText(structuredData, nameof(structuredData));
+        var dynamicServingValue = ParseDynamicServing(dynamicServing, nameof(dynamicServing));
+
+        await PostCommandAsync(
+            "SubmitContent",
+            new SubmitContentRequest
+            {
+                SiteUrl = normalizedSiteUrl,
+                Url = normalizedUrl,
+                HttpMessage = normalizedHttpMessage,
+                StructuredData = normalizedStructuredData,
+                DynamicServing = dynamicServingValue
+            },
+            BingWebmasterJsonContext.Default.SubmitContentRequest,
+            cancellationToken).ConfigureAwait(false);
+
+        return new SubmitContentResponse(
+            normalizedSiteUrl,
+            normalizedUrl,
+            DecodeDynamicServing(dynamicServingValue),
+            true,
+            DateTimeOffset.UtcNow);
+    }
+
+    internal async Task<ContentSubmissionQuotaResponse> GetContentSubmissionQuotaAsync(
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedSiteUrl = RequireText(siteUrl, nameof(siteUrl));
+        var rawQuota = await GetEnvelopeAsync(
+            "GetContentSubmissionQuota",
+            new Dictionary<string, string?>
+            {
+                ["siteUrl"] = normalizedSiteUrl
+            },
+            BingWebmasterJsonContext.Default.ApiUrlSubmissionQuota,
+            cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Bing returned an empty content submission quota payload.");
+
+        return new ContentSubmissionQuotaResponse(
+            normalizedSiteUrl,
+            rawQuota.DailyQuota,
+            rawQuota.MonthlyQuota,
+            DateTimeOffset.UtcNow);
+    }
+
     private async Task<List<QueryStatsEntry>> GetQueryStatsRowsAsync(
         string methodName,
         IReadOnlyDictionary<string, string?> queryParameters,
@@ -587,6 +1238,24 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
         using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
         return await DeserializeEnvelopeAsync(response, BingWebmasterJsonContext.Default.Boolean, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<TResponse?> PostEnvelopeAsync<TBody, TResponse>(
+        string methodName,
+        TBody body,
+        JsonTypeInfo<TBody> bodyTypeInfo,
+        JsonTypeInfo<TResponse> responseTypeInfo,
+        CancellationToken cancellationToken)
+    {
+        var jsonBody = JsonSerializer.Serialize(body, bodyTypeInfo);
+        var request = new HttpRequestMessage(HttpMethod.Post, BuildUrl(methodName, null))
+        {
+            Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+        };
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        await EnsureSuccessAsync(response, cancellationToken).ConfigureAwait(false);
+        return await DeserializeEnvelopeAsync(response, responseTypeInfo, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -675,6 +1344,24 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
             feed.Status,
             feed.UrlCount);
 
+    private static ChildUrlInfoEntry ToChildUrlInfoEntry(ApiUrlInfo info)
+        => new(
+            info.Url,
+            info.IsPage,
+            info.HttpStatus,
+            info.DocumentSize,
+            info.AnchorCount,
+            ParseOptionalDate(info.DiscoveryDate),
+            ParseOptionalDate(info.LastCrawledDate),
+            info.TotalChildUrlCount);
+
+    private static ChildUrlTrafficInfoEntry ToChildUrlTrafficInfoEntry(ApiUrlTrafficInfo info)
+        => new(
+            info.Url,
+            info.IsPage,
+            info.Clicks,
+            info.Impressions);
+
     private static DateTimeOffset ParseRequiredDate(string value, string fieldName)
         => BingDateParser.TryParse(value, out var parsed)
             ? parsed
@@ -689,6 +1376,19 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
         => string.IsNullOrWhiteSpace(value)
             ? throw new ArgumentException("Value is required.", paramName)
             : value.Trim();
+
+    private static string RequireIsoDate(string value, string paramName)
+    {
+        var normalized = RequireText(value, paramName);
+        return DateOnly.ParseExact(normalized, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+            .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    }
+
+    private static void RequireNonNegative(int value, string paramName)
+    {
+        if (value < 0)
+            throw new ArgumentOutOfRangeException(paramName, "Value must be zero or greater.");
+    }
 
     private static IReadOnlyList<string> NormalizeUrlList(IReadOnlyList<string> urlList, int maxCount)
     {
@@ -730,5 +1430,227 @@ internal sealed class BingWebmasterClient(HttpClient httpClient, string apiKey, 
     {
         if ((issues & flag) == flag)
             decoded.Add(name);
+    }
+
+    private static string ToBooleanString(bool value)
+        => value ? "true" : "false";
+
+    private static int ParseRole(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Administrator", 0),
+                ("ReadOnly", 1),
+                ("ReadWrite", 2)
+            ]);
+
+    private static string DecodeRole(int value)
+        => value switch
+        {
+            0 => "Administrator",
+            1 => "ReadOnly",
+            2 => "ReadWrite",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseEntityType(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Page", 0),
+                ("Directory", 1)
+            ]);
+
+    private static string DecodeEntityType(int value)
+        => value switch
+        {
+            0 => "Page",
+            1 => "Directory",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseRequestType(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("CacheOnly", 0),
+                ("FullRemoval", 1)
+            ]);
+
+    private static string DecodeRequestType(int value)
+        => value switch
+        {
+            0 => "CacheOnly",
+            1 => "FullRemoval",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseMoveScope(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Domain", 0),
+                ("Host", 1),
+                ("Directory", 2)
+            ]);
+
+    private static string DecodeMoveScope(int value)
+        => value switch
+        {
+            0 => "Domain",
+            1 => "Host",
+            2 => "Directory",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseMoveType(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Local", 0),
+                ("Global", 1)
+            ]);
+
+    private static string DecodeMoveType(int value)
+        => value switch
+        {
+            0 => "Local",
+            1 => "Global",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseCrawlDateFilter(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Any", 0),
+                ("LastWeek", 1),
+                ("LastTwoWeeks", 2),
+                ("LastThreeWeeks", 4)
+            ]);
+
+    private static string DecodeCrawlDateFilter(int value)
+        => value switch
+        {
+            0 => "Any",
+            1 => "LastWeek",
+            2 => "LastTwoWeeks",
+            4 => "LastThreeWeeks",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseDiscoveredDateFilter(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Any", 0),
+                ("LastWeek", 1),
+                ("LastMonth", 2)
+            ]);
+
+    private static string DecodeDiscoveredDateFilter(int value)
+        => value switch
+        {
+            0 => "Any",
+            1 => "LastWeek",
+            2 => "LastMonth",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseDocFlagsFilter(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Any", 0),
+                ("IsBlockedByRobotsTxt", 1),
+                ("IsMalware", 2)
+            ]);
+
+    private static string DecodeDocFlagsFilter(int value)
+        => value switch
+        {
+            0 => "Any",
+            1 => "IsBlockedByRobotsTxt",
+            2 => "IsMalware",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseHttpCodeFilter(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("Any", 0),
+                ("Code2xx", 1),
+                ("Code3xx", 2),
+                ("Code301", 4),
+                ("Code302", 8),
+                ("Code4xx", 16),
+                ("Code5xx", 32),
+                ("AllOthers", 64)
+            ]);
+
+    private static string DecodeHttpCodeFilter(int value)
+        => value switch
+        {
+            0 => "Any",
+            1 => "Code2xx",
+            2 => "Code3xx",
+            4 => "Code301",
+            8 => "Code302",
+            16 => "Code4xx",
+            32 => "Code5xx",
+            64 => "AllOthers",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseDynamicServing(string value, string paramName)
+        => ParseNamedValue(
+            value,
+            paramName,
+            [
+                ("None", 0),
+                ("PcLaptop", 1),
+                ("Mobile", 2),
+                ("Amp", 3),
+                ("Tablet", 4),
+                ("NonVisualBrowser", 5)
+            ]);
+
+    private static string DecodeDynamicServing(int value)
+        => value switch
+        {
+            0 => "None",
+            1 => "PcLaptop",
+            2 => "Mobile",
+            3 => "Amp",
+            4 => "Tablet",
+            5 => "NonVisualBrowser",
+            _ => $"Unknown({value})"
+        };
+
+    private static int ParseNamedValue(
+        string value,
+        string paramName,
+        ReadOnlySpan<(string Name, int Value)> supportedValues)
+    {
+        var normalized = RequireText(value, paramName);
+        foreach (var supportedValue in supportedValues)
+        {
+            if (string.Equals(normalized, supportedValue.Name, StringComparison.OrdinalIgnoreCase))
+                return supportedValue.Value;
+        }
+
+        throw new ArgumentException(
+            $"Unsupported value '{value}'. Expected one of: {string.Join(", ", supportedValues.ToArray().Select(v => v.Name))}.",
+            paramName);
     }
 }

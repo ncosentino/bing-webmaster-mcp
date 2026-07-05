@@ -42,15 +42,24 @@ nav:
       - list_sites: tools/list-sites.md
       - add_site: tools/add-site.md
       - verify_site: tools/verify-site.md
+      - remove_site: tools/remove-site.md
+    - Site Access:
+      - get_site_roles: tools/get-site-roles.md
+      - add_site_role: tools/add-site-role.md
+      - remove_site_role: tools/remove-site-role.md
     - Sitemaps:
       - list_sitemaps: tools/list-sitemaps.md
       - get_sitemap_details: tools/get-sitemap-details.md
       - submit_sitemap: tools/submit-sitemap.md
+      - remove_sitemap: tools/remove-sitemap.md
     - URL Submission & Indexing:
       - submit_url: tools/submit-url.md
       - submit_url_batch: tools/submit-url-batch.md
       - submit_url_indexnow: tools/submit-url-indexnow.md
       - get_url_submission_quota: tools/get-url-submission-quota.md
+    - Content Submission:
+      - submit_content: tools/submit-content.md
+      - get_content_submission_quota: tools/get-content-submission-quota.md
     - Crawling:
       - get_crawl_issues: tools/get-crawl-issues.md
       - get_crawl_stats: tools/get-crawl-stats.md
@@ -59,13 +68,32 @@ nav:
       - get_url_traffic_info: tools/get-url-traffic-info.md
       - get_url_links: tools/get-url-links.md
       - get_link_counts: tools/get-link-counts.md
+    - Directory Inspection:
+      - get_children_url_info: tools/get-children-url-info.md
+      - get_children_url_traffic_info: tools/get-children-url-traffic-info.md
+    - Blocked URLs:
+      - get_blocked_urls: tools/get-blocked-urls.md
+      - add_blocked_url: tools/add-blocked-url.md
+      - remove_blocked_url: tools/remove-blocked-url.md
+    - Fetch Diagnostics:
+      - fetch_url: tools/fetch-url.md
+      - list_fetched_urls: tools/list-fetched-urls.md
+      - get_fetched_url_details: tools/get-fetched-url-details.md
+    - Site Moves:
+      - get_site_moves: tools/get-site-moves.md
+      - submit_site_move: tools/submit-site-move.md
     - Search Analytics:
       - get_rank_and_traffic_stats: tools/get-rank-and-traffic-stats.md
       - get_query_stats: tools/get-query-stats.md
       - get_page_stats: tools/get-page-stats.md
       - get_page_query_stats: tools/get-page-query-stats.md
       - get_query_page_stats: tools/get-query-page-stats.md
+      - get_query_page_detail_stats: tools/get-query-page-detail-stats.md
+      - get_query_traffic_stats: tools/get-query-traffic-stats.md
       - get_keyword_stats: tools/get-keyword-stats.md
+    - Keyword Research:
+      - get_keyword: tools/get-keyword.md
+      - get_related_keywords: tools/get-related-keywords.md
   - Setup by Tool: setup-by-tool.md
   - Configuration: configuration.md
   - Go vs C#: implementations.md

@@ -428,6 +428,591 @@ func (c *Client) GetKeywordStats(ctx context.Context, query string, country stri
 	return &keywordStatsResult{Query: query, Country: country, Language: language, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
+// RemoveSite removes a site from Bing Webmaster Tools.
+func (c *Client) RemoveSite(ctx context.Context, siteURL string) (*removeSiteResult, error) {
+	if err := c.postCommand(ctx, "RemoveSite", map[string]string{"siteUrl": siteURL}); err != nil {
+		return nil, err
+	}
+
+	return &removeSiteResult{SiteURL: siteURL, Success: true, RequestedAt: time.Now().UTC()}, nil
+}
+
+// GetSiteRoles returns delegated roles for a site.
+func (c *Client) GetSiteRoles(ctx context.Context, siteURL string, includeAllSubdomains bool) (*siteRolesResult, error) {
+	var raw []rawSiteRole
+	if err := c.get(ctx, "GetSiteRoles", map[string]string{
+		"siteUrl":              siteURL,
+		"includeAllSubdomains": strconv.FormatBool(includeAllSubdomains),
+	}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]siteRole, len(raw))
+	for i, item := range raw {
+		rows[i] = siteRole{
+			Email:                   item.Email,
+			Role:                    decodeSiteRole(item.Role),
+			Site:                    item.Site,
+			VerificationSite:        item.VerificationSite,
+			Expired:                 item.Expired,
+			DelegatorEmail:          item.DelegatorEmail,
+			DelegatedCode:           item.DelegatedCode,
+			DelegatedCodeOwnerEmail: item.DelegatedCodeOwnerEmail,
+			Date:                    timePointer(item.Date),
+		}
+	}
+
+	return &siteRolesResult{
+		SiteURL:              siteURL,
+		IncludeAllSubdomains: includeAllSubdomains,
+		RowCount:             len(rows),
+		Rows:                 rows,
+		QueriedAt:            time.Now().UTC(),
+	}, nil
+}
+
+// AddSiteRole adds a delegated role for a site.
+func (c *Client) AddSiteRole(ctx context.Context, siteURL string, delegatedURL string, userEmail string, authenticationCode string, isAdministrator bool, isReadOnly bool) (*addSiteRoleResult, error) {
+	payload := rawAddSiteRoleRequest{
+		SiteURL:            siteURL,
+		DelegatedURL:       delegatedURL,
+		UserEmail:          userEmail,
+		AuthenticationCode: authenticationCode,
+		IsAdministrator:    isAdministrator,
+		IsReadOnly:         isReadOnly,
+	}
+	if err := c.postCommand(ctx, "AddSiteRoles", payload); err != nil {
+		return nil, err
+	}
+
+	return &addSiteRoleResult{
+		SiteURL:         siteURL,
+		DelegatedURL:    delegatedURL,
+		UserEmail:       userEmail,
+		IsAdministrator: isAdministrator,
+		IsReadOnly:      isReadOnly,
+		Success:         true,
+		RequestedAt:     time.Now().UTC(),
+	}, nil
+}
+
+// RemoveSiteRole removes a delegated role for a site.
+func (c *Client) RemoveSiteRole(ctx context.Context, siteURL string, email string, role string) (*removeSiteRoleResult, error) {
+	roleValue, err := encodeSiteRole(role)
+	if err != nil {
+		return nil, err
+	}
+
+	// Bing's exact required field set for RemoveSiteRole matching is not confirmed publicly. Mirror
+	// the known nested shape and populate the minimum identity fields we have from the tool input:
+	// current Date, Email, Role, Site, and VerificationSite. The ancillary delegated-code/email
+	// fields are left empty/omitted until live verification proves they are required.
+	payload := rawSiteRoleCommandRequest{
+		SiteURL: siteURL,
+		SiteRole: rawSiteRoleCommand{
+			Date:             formatDotNetDate(time.Now().UTC()),
+			Email:            email,
+			Role:             roleValue,
+			Site:             siteURL,
+			VerificationSite: siteURL,
+		},
+	}
+	if err := c.postCommand(ctx, "RemoveSiteRole", payload); err != nil {
+		return nil, err
+	}
+
+	return &removeSiteRoleResult{
+		SiteURL:     siteURL,
+		Email:       email,
+		Role:        role,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
+// GetBlockedURLs returns blocked URL removals for a site.
+func (c *Client) GetBlockedURLs(ctx context.Context, siteURL string) (*blockedURLsResult, error) {
+	var raw []rawBlockedURL
+	if err := c.get(ctx, "GetBlockedUrls", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]blockedURL, len(raw))
+	for i, item := range raw {
+		rows[i] = blockedURL{
+			URL:         item.URL,
+			EntityType:  decodeBlockedURLEntityType(item.EntityType),
+			RequestType: decodeBlockedURLRequestType(item.RequestType),
+			Date:        timePointer(item.Date),
+		}
+	}
+
+	return &blockedURLsResult{SiteURL: siteURL, RowCount: len(rows), Rows: rows, QueriedAt: time.Now().UTC()}, nil
+}
+
+// AddBlockedURL adds a blocked URL removal request for a site.
+func (c *Client) AddBlockedURL(ctx context.Context, siteURL string, blockedURLValue string, entityType string, requestType string) (*addBlockedURLResult, error) {
+	if entityType == "" {
+		entityType = "Page"
+	}
+	if requestType == "" {
+		requestType = "CacheOnly"
+	}
+
+	entityTypeValue, err := encodeBlockedURLEntityType(entityType)
+	if err != nil {
+		return nil, err
+	}
+	requestTypeValue, err := encodeBlockedURLRequestType(requestType)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawBlockedURLCommandRequest{
+		SiteURL: siteURL,
+		BlockedURL: rawBlockedURLCommand{
+			Date:        formatDotNetDate(time.Now().UTC()),
+			EntityType:  entityTypeValue,
+			RequestType: requestTypeValue,
+			URL:         blockedURLValue,
+		},
+	}
+	if err := c.postCommand(ctx, "AddBlockedUrl", payload); err != nil {
+		return nil, err
+	}
+
+	return &addBlockedURLResult{
+		SiteURL:     siteURL,
+		URL:         blockedURLValue,
+		EntityType:  entityType,
+		RequestType: requestType,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
+// RemoveBlockedURL removes a blocked URL removal request for a site.
+func (c *Client) RemoveBlockedURL(ctx context.Context, siteURL string, blockedURLValue string, entityType string, requestType string) (*removeBlockedURLResult, error) {
+	if entityType == "" {
+		entityType = "Page"
+	}
+	if requestType == "" {
+		requestType = "FullRemoval"
+	}
+
+	entityTypeValue, err := encodeBlockedURLEntityType(entityType)
+	if err != nil {
+		return nil, err
+	}
+	requestTypeValue, err := encodeBlockedURLRequestType(requestType)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawBlockedURLCommandRequest{
+		SiteURL: siteURL,
+		BlockedURL: rawBlockedURLCommand{
+			Date:        formatDotNetDate(time.Now().UTC()),
+			EntityType:  entityTypeValue,
+			RequestType: requestTypeValue,
+			URL:         blockedURLValue,
+		},
+	}
+	if err := c.postCommand(ctx, "RemoveBlockedUrl", payload); err != nil {
+		return nil, err
+	}
+
+	return &removeBlockedURLResult{
+		SiteURL:     siteURL,
+		URL:         blockedURLValue,
+		EntityType:  entityType,
+		RequestType: requestType,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
+// GetQueryPageDetailStats returns daily stats for a specific query/page pair.
+func (c *Client) GetQueryPageDetailStats(ctx context.Context, siteURL string, query string, page string) (*queryPageDetailStatsResult, error) {
+	var raw []rawDetailedQueryStat
+	if err := c.get(ctx, "GetQueryPageDetailStats", map[string]string{
+		"siteUrl": siteURL,
+		"query":   query,
+		"page":    page,
+	}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]detailedQueryStat, len(raw))
+	for i, item := range raw {
+		rows[i] = detailedQueryStat{
+			Date:        timePointer(item.Date),
+			Clicks:      item.Clicks,
+			Impressions: item.Impressions,
+			Position:    item.Position,
+		}
+	}
+
+	return &queryPageDetailStatsResult{
+		SiteURL:   siteURL,
+		Query:     query,
+		Page:      page,
+		RowCount:  len(rows),
+		Rows:      rows,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// GetQueryTrafficStats returns daily clicks and impressions for a query.
+func (c *Client) GetQueryTrafficStats(ctx context.Context, siteURL string, query string) (*queryTrafficStatsResult, error) {
+	var raw []rawRankTrafficStat
+	if err := c.get(ctx, "GetQueryTrafficStats", map[string]string{"siteUrl": siteURL, "query": query}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]rankTrafficStat, len(raw))
+	for i, item := range raw {
+		rows[i] = rankTrafficStat{Date: timePointer(item.Date), Clicks: item.Clicks, Impressions: item.Impressions}
+	}
+
+	return &queryTrafficStatsResult{SiteURL: siteURL, Query: query, RowCount: len(rows), Rows: rows, QueriedAt: time.Now().UTC()}, nil
+}
+
+// GetKeyword returns market-wide impressions for a keyword over a date range.
+func (c *Client) GetKeyword(ctx context.Context, query string, country string, language string, startDate string, endDate string) (*keywordResult, error) {
+	var raw rawKeywordLookup
+	if err := c.get(ctx, "GetKeyword", map[string]string{
+		"q":         query,
+		"country":   country,
+		"language":  language,
+		"startDate": startDate,
+		"endDate":   endDate,
+	}, &raw); err != nil {
+		return nil, err
+	}
+
+	found := raw.Query != ""
+	return &keywordResult{
+		Query:            query,
+		Country:          country,
+		Language:         language,
+		StartDate:        startDate,
+		EndDate:          endDate,
+		Found:            found,
+		Impressions:      raw.Impressions,
+		BroadImpressions: raw.BroadImpressions,
+		QueriedAt:        time.Now().UTC(),
+	}, nil
+}
+
+// GetRelatedKeywords returns market-wide related keyword impressions over a date range.
+func (c *Client) GetRelatedKeywords(ctx context.Context, query string, country string, language string, startDate string, endDate string) (*relatedKeywordsResult, error) {
+	var raw []rawKeywordLookup
+	if err := c.get(ctx, "GetRelatedKeywords", map[string]string{
+		"q":         query,
+		"country":   country,
+		"language":  language,
+		"startDate": startDate,
+		"endDate":   endDate,
+	}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]relatedKeyword, len(raw))
+	for i, item := range raw {
+		rows[i] = relatedKeyword{
+			Query:            item.Query,
+			Impressions:      item.Impressions,
+			BroadImpressions: item.BroadImpressions,
+		}
+	}
+
+	return &relatedKeywordsResult{
+		Query:     query,
+		Country:   country,
+		Language:  language,
+		StartDate: startDate,
+		EndDate:   endDate,
+		RowCount:  len(rows),
+		Rows:      rows,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// GetChildrenURLInfo returns child URL crawl information for a parent URL.
+func (c *Client) GetChildrenURLInfo(ctx context.Context, siteURL string, requestedURL string, page int, crawlDateFilter string, discoveredDateFilter string, docFlagsFilter string, httpCodeFilter string) (*childrenURLInfoResult, error) {
+	if crawlDateFilter == "" {
+		crawlDateFilter = "Any"
+	}
+	if discoveredDateFilter == "" {
+		discoveredDateFilter = "Any"
+	}
+	if docFlagsFilter == "" {
+		docFlagsFilter = "Any"
+	}
+	if httpCodeFilter == "" {
+		httpCodeFilter = "Any"
+	}
+
+	crawlDateFilterValue, err := encodeCrawlDateFilter(crawlDateFilter)
+	if err != nil {
+		return nil, err
+	}
+	discoveredDateFilterValue, err := encodeDiscoveredDateFilter(discoveredDateFilter)
+	if err != nil {
+		return nil, err
+	}
+	docFlagsFilterValue, err := encodeDocFlagsFilter(docFlagsFilter)
+	if err != nil {
+		return nil, err
+	}
+	httpCodeFilterValue, err := encodeHTTPCodeFilter(httpCodeFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawChildrenURLInfoRequest{
+		SiteURL: siteURL,
+		URL:     requestedURL,
+		Page:    page,
+		FilterProperties: rawFilterProperties{
+			CrawlDateFilter:      crawlDateFilterValue,
+			DiscoveredDateFilter: discoveredDateFilterValue,
+			DocFlagsFilters:      docFlagsFilterValue,
+			HTTPCodeFilters:      httpCodeFilterValue,
+		},
+	}
+
+	var raw []rawURLInfo
+	if err := c.post(ctx, "GetChildrenUrlInfo", payload, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]childURLInfo, len(raw))
+	for i, item := range raw {
+		rows[i] = childURLInfo{
+			URL:                item.URL,
+			IsPage:             item.IsPage,
+			HTTPStatus:         item.HTTPStatus,
+			DocumentSize:       item.DocumentSize,
+			AnchorCount:        item.AnchorCount,
+			DiscoveryDate:      timePointer(item.DiscoveryDate),
+			LastCrawledDate:    timePointer(item.LastCrawledDate),
+			TotalChildURLCount: item.TotalChildURLCount,
+		}
+	}
+
+	return &childrenURLInfoResult{
+		SiteURL:              siteURL,
+		URL:                  requestedURL,
+		Page:                 page,
+		CrawlDateFilter:      crawlDateFilter,
+		DiscoveredDateFilter: discoveredDateFilter,
+		DocFlagsFilter:       docFlagsFilter,
+		HTTPCodeFilter:       httpCodeFilter,
+		RowCount:             len(rows),
+		Rows:                 rows,
+		QueriedAt:            time.Now().UTC(),
+	}, nil
+}
+
+// GetChildrenURLTrafficInfo returns child URL traffic information for a parent URL.
+func (c *Client) GetChildrenURLTrafficInfo(ctx context.Context, siteURL string, requestedURL string, page int) (*childrenURLTrafficInfoResult, error) {
+	var raw []rawURLTrafficInfo
+	if err := c.get(ctx, "GetChildrenUrlTrafficInfo", map[string]string{
+		"siteUrl": siteURL,
+		"url":     requestedURL,
+		"page":    strconv.Itoa(page),
+	}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]childURLTrafficInfo, len(raw))
+	for i, item := range raw {
+		rows[i] = childURLTrafficInfo{
+			URL:         item.URL,
+			IsPage:      item.IsPage,
+			Clicks:      item.Clicks,
+			Impressions: item.Impressions,
+		}
+	}
+
+	return &childrenURLTrafficInfoResult{
+		SiteURL:   siteURL,
+		URL:       requestedURL,
+		Page:      page,
+		RowCount:  len(rows),
+		Rows:      rows,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// FetchURL requests a fresh Bing fetch for a URL.
+func (c *Client) FetchURL(ctx context.Context, siteURL string, requestedURL string) (*fetchURLResult, error) {
+	if err := c.postCommand(ctx, "FetchUrl", map[string]string{"siteUrl": siteURL, "url": requestedURL}); err != nil {
+		return nil, err
+	}
+
+	return &fetchURLResult{SiteURL: siteURL, URL: requestedURL, Success: true, RequestedAt: time.Now().UTC()}, nil
+}
+
+// ListFetchedURLs returns previously fetched URLs for a site.
+func (c *Client) ListFetchedURLs(ctx context.Context, siteURL string) (*fetchedURLsResult, error) {
+	var raw []rawFetchedURL
+	if err := c.get(ctx, "GetFetchedUrls", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]fetchedURL, len(raw))
+	for i, item := range raw {
+		rows[i] = fetchedURL{
+			URL:     item.URL,
+			Date:    timePointer(item.Date),
+			Fetched: item.Fetched,
+			Expired: item.Expired,
+		}
+	}
+
+	return &fetchedURLsResult{SiteURL: siteURL, RowCount: len(rows), Rows: rows, QueriedAt: time.Now().UTC()}, nil
+}
+
+// GetFetchedURLDetails returns the stored fetch response for a URL.
+func (c *Client) GetFetchedURLDetails(ctx context.Context, siteURL string, requestedURL string) (*fetchedURLDetailsResult, error) {
+	var raw rawFetchedURLDetails
+	if err := c.get(ctx, "GetFetchedUrlDetails", map[string]string{"siteUrl": siteURL, "url": requestedURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	return &fetchedURLDetailsResult{
+		SiteURL:   siteURL,
+		URL:       raw.URL,
+		Date:      timePointer(raw.Date),
+		Status:    raw.Status,
+		Headers:   raw.Headers,
+		Document:  raw.Document,
+		QueriedAt: time.Now().UTC(),
+	}, nil
+}
+
+// RemoveSitemap removes a sitemap from Bing Webmaster Tools.
+func (c *Client) RemoveSitemap(ctx context.Context, siteURL string, feedURL string) (*removeSitemapResult, error) {
+	if err := c.postCommand(ctx, "RemoveFeed", map[string]string{"siteUrl": siteURL, "feedUrl": feedURL}); err != nil {
+		return nil, err
+	}
+
+	return &removeSitemapResult{SiteURL: siteURL, FeedURL: feedURL, Success: true, RequestedAt: time.Now().UTC()}, nil
+}
+
+// GetSiteMoves returns site move settings for a site.
+func (c *Client) GetSiteMoves(ctx context.Context, siteURL string) (*siteMovesResult, error) {
+	var raw []rawSiteMoveSettings
+	if err := c.get(ctx, "GetSiteMoves", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	rows := make([]siteMove, len(raw))
+	for i, item := range raw {
+		rows[i] = siteMove{
+			Date:      timePointer(item.Date),
+			MoveScope: decodeMoveScope(item.MoveScope),
+			MoveType:  decodeMoveType(item.MoveType),
+			SourceURL: item.SourceURL,
+			TargetURL: item.TargetURL,
+		}
+	}
+
+	return &siteMovesResult{SiteURL: siteURL, RowCount: len(rows), Rows: rows, QueriedAt: time.Now().UTC()}, nil
+}
+
+// SubmitSiteMove submits a site move request.
+func (c *Client) SubmitSiteMove(ctx context.Context, siteURL string, sourceURL string, targetURL string, moveType string, moveScope string) (*submitSiteMoveResult, error) {
+	if moveType == "" {
+		moveType = "Local"
+	}
+	if moveScope == "" {
+		moveScope = "Domain"
+	}
+
+	moveTypeValue, err := encodeMoveType(moveType)
+	if err != nil {
+		return nil, err
+	}
+	moveScopeValue, err := encodeMoveScope(moveScope)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawSiteMoveCommandRequest{
+		SiteURL: siteURL,
+		Settings: rawSiteMoveCommand{
+			Date:      formatDotNetDate(time.Now().UTC()),
+			MoveScope: moveScopeValue,
+			MoveType:  moveTypeValue,
+			SourceURL: sourceURL,
+			TargetURL: targetURL,
+		},
+	}
+	if err := c.postCommand(ctx, "SubmitSiteMove", payload); err != nil {
+		return nil, err
+	}
+
+	return &submitSiteMoveResult{
+		SiteURL:     siteURL,
+		SourceURL:   sourceURL,
+		TargetURL:   targetURL,
+		MoveType:    moveType,
+		MoveScope:   moveScope,
+		Success:     true,
+		RequestedAt: time.Now().UTC(),
+	}, nil
+}
+
+// SubmitContent submits cached content and structured data for a URL.
+func (c *Client) SubmitContent(ctx context.Context, siteURL string, requestedURL string, httpMessage string, structuredData string, dynamicServing string) (*submitContentResult, error) {
+	if dynamicServing == "" {
+		dynamicServing = "None"
+	}
+
+	dynamicServingValue, err := encodeDynamicServing(dynamicServing)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := rawSubmitContentRequest{
+		SiteURL:        siteURL,
+		URL:            requestedURL,
+		HTTPMessage:    httpMessage,
+		StructuredData: structuredData,
+		DynamicServing: dynamicServingValue,
+	}
+	if err := c.postCommand(ctx, "SubmitContent", payload); err != nil {
+		return nil, err
+	}
+
+	return &submitContentResult{
+		SiteURL:        siteURL,
+		URL:            requestedURL,
+		DynamicServing: dynamicServing,
+		Success:        true,
+		RequestedAt:    time.Now().UTC(),
+	}, nil
+}
+
+// GetContentSubmissionQuota returns content submission quotas for a site.
+func (c *Client) GetContentSubmissionQuota(ctx context.Context, siteURL string) (*contentSubmissionQuotaResult, error) {
+	var raw rawQuota
+	if err := c.get(ctx, "GetContentSubmissionQuota", map[string]string{"siteUrl": siteURL}, &raw); err != nil {
+		return nil, err
+	}
+
+	return &contentSubmissionQuotaResult{
+		SiteURL:      siteURL,
+		DailyQuota:   raw.DailyQuota,
+		MonthlyQuota: raw.MonthlyQuota,
+		QueriedAt:    time.Now().UTC(),
+	}, nil
+}
+
 func (c *Client) getQueryStats(ctx context.Context, method string, params map[string]string) ([]queryStat, error) {
 	var raw []rawQueryStat
 	if err := c.get(ctx, method, params, &raw); err != nil {

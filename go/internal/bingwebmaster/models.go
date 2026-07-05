@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -57,6 +58,10 @@ func timePointer(value wireTime) *time.Time {
 
 	t := value.Time.UTC()
 	return &t
+}
+
+func formatDotNetDate(value time.Time) string {
+	return fmt.Sprintf("/Date(%d+0000)/", value.UTC().UnixMilli())
 }
 
 type siteList struct {
@@ -298,6 +303,253 @@ type keywordStat struct {
 	BroadImpressions int        `json:"broadImpressions"`
 }
 
+type removeSiteResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type siteRolesResult struct {
+	SiteURL              string     `json:"siteUrl"`
+	IncludeAllSubdomains bool       `json:"includeAllSubdomains"`
+	RowCount             int        `json:"rowCount"`
+	Rows                 []siteRole `json:"rows"`
+	QueriedAt            time.Time  `json:"queriedAt"`
+}
+
+type siteRole struct {
+	Email                   string     `json:"email"`
+	Role                    string     `json:"role"`
+	Site                    string     `json:"site"`
+	VerificationSite        string     `json:"verificationSite"`
+	Expired                 bool       `json:"expired"`
+	DelegatorEmail          string     `json:"delegatorEmail,omitempty"`
+	DelegatedCode           string     `json:"delegatedCode,omitempty"`
+	DelegatedCodeOwnerEmail string     `json:"delegatedCodeOwnerEmail,omitempty"`
+	Date                    *time.Time `json:"date,omitempty"`
+}
+
+type addSiteRoleResult struct {
+	SiteURL         string    `json:"siteUrl"`
+	DelegatedURL    string    `json:"delegatedUrl"`
+	UserEmail       string    `json:"userEmail"`
+	IsAdministrator bool      `json:"isAdministrator"`
+	IsReadOnly      bool      `json:"isReadOnly"`
+	Success         bool      `json:"success"`
+	RequestedAt     time.Time `json:"requestedAt"`
+}
+
+type removeSiteRoleResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	Email       string    `json:"email"`
+	Role        string    `json:"role"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type blockedURLsResult struct {
+	SiteURL   string       `json:"siteUrl"`
+	RowCount  int          `json:"rowCount"`
+	Rows      []blockedURL `json:"rows"`
+	QueriedAt time.Time    `json:"queriedAt"`
+}
+
+type blockedURL struct {
+	URL         string     `json:"url"`
+	EntityType  string     `json:"entityType"`
+	RequestType string     `json:"requestType"`
+	Date        *time.Time `json:"date,omitempty"`
+}
+
+type addBlockedURLResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	URL         string    `json:"url"`
+	EntityType  string    `json:"entityType"`
+	RequestType string    `json:"requestType"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type removeBlockedURLResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	URL         string    `json:"url"`
+	EntityType  string    `json:"entityType"`
+	RequestType string    `json:"requestType"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type queryPageDetailStatsResult struct {
+	SiteURL   string              `json:"siteUrl"`
+	Query     string              `json:"query"`
+	Page      string              `json:"page"`
+	RowCount  int                 `json:"rowCount"`
+	Rows      []detailedQueryStat `json:"rows"`
+	QueriedAt time.Time           `json:"queriedAt"`
+}
+
+type detailedQueryStat struct {
+	Date        *time.Time `json:"date,omitempty"`
+	Clicks      int        `json:"clicks"`
+	Impressions int        `json:"impressions"`
+	Position    int        `json:"position"`
+}
+
+type queryTrafficStatsResult struct {
+	SiteURL   string            `json:"siteUrl"`
+	Query     string            `json:"query"`
+	RowCount  int               `json:"rowCount"`
+	Rows      []rankTrafficStat `json:"rows"`
+	QueriedAt time.Time         `json:"queriedAt"`
+}
+
+type keywordResult struct {
+	Query            string    `json:"query"`
+	Country          string    `json:"country"`
+	Language         string    `json:"language"`
+	StartDate        string    `json:"startDate"`
+	EndDate          string    `json:"endDate"`
+	Found            bool      `json:"found"`
+	Impressions      int       `json:"impressions"`
+	BroadImpressions int       `json:"broadImpressions"`
+	QueriedAt        time.Time `json:"queriedAt"`
+}
+
+type relatedKeywordsResult struct {
+	Query     string           `json:"query"`
+	Country   string           `json:"country"`
+	Language  string           `json:"language"`
+	StartDate string           `json:"startDate"`
+	EndDate   string           `json:"endDate"`
+	RowCount  int              `json:"rowCount"`
+	Rows      []relatedKeyword `json:"rows"`
+	QueriedAt time.Time        `json:"queriedAt"`
+}
+
+type relatedKeyword struct {
+	Query            string `json:"query"`
+	Impressions      int    `json:"impressions"`
+	BroadImpressions int    `json:"broadImpressions"`
+}
+
+type childrenURLInfoResult struct {
+	SiteURL              string         `json:"siteUrl"`
+	URL                  string         `json:"url"`
+	Page                 int            `json:"page"`
+	CrawlDateFilter      string         `json:"crawlDateFilter"`
+	DiscoveredDateFilter string         `json:"discoveredDateFilter"`
+	DocFlagsFilter       string         `json:"docFlagsFilter"`
+	HTTPCodeFilter       string         `json:"httpCodeFilter"`
+	RowCount             int            `json:"rowCount"`
+	Rows                 []childURLInfo `json:"rows"`
+	QueriedAt            time.Time      `json:"queriedAt"`
+}
+
+type childURLInfo struct {
+	URL                string     `json:"url"`
+	IsPage             bool       `json:"isPage"`
+	HTTPStatus         int        `json:"httpStatus"`
+	DocumentSize       int        `json:"documentSize"`
+	AnchorCount        int        `json:"anchorCount"`
+	DiscoveryDate      *time.Time `json:"discoveryDate,omitempty"`
+	LastCrawledDate    *time.Time `json:"lastCrawledDate,omitempty"`
+	TotalChildURLCount int        `json:"totalChildUrlCount"`
+}
+
+type childrenURLTrafficInfoResult struct {
+	SiteURL   string                `json:"siteUrl"`
+	URL       string                `json:"url"`
+	Page      int                   `json:"page"`
+	RowCount  int                   `json:"rowCount"`
+	Rows      []childURLTrafficInfo `json:"rows"`
+	QueriedAt time.Time             `json:"queriedAt"`
+}
+
+type childURLTrafficInfo struct {
+	URL         string `json:"url"`
+	IsPage      bool   `json:"isPage"`
+	Clicks      int    `json:"clicks"`
+	Impressions int    `json:"impressions"`
+}
+
+type fetchURLResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	URL         string    `json:"url"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type fetchedURLsResult struct {
+	SiteURL   string       `json:"siteUrl"`
+	RowCount  int          `json:"rowCount"`
+	Rows      []fetchedURL `json:"rows"`
+	QueriedAt time.Time    `json:"queriedAt"`
+}
+
+type fetchedURL struct {
+	URL     string     `json:"url"`
+	Date    *time.Time `json:"date,omitempty"`
+	Fetched bool       `json:"fetched"`
+	Expired bool       `json:"expired"`
+}
+
+type fetchedURLDetailsResult struct {
+	SiteURL   string     `json:"siteUrl"`
+	URL       string     `json:"url"`
+	Date      *time.Time `json:"date,omitempty"`
+	Status    string     `json:"status,omitempty"`
+	Headers   string     `json:"headers,omitempty"`
+	Document  string     `json:"document,omitempty"`
+	QueriedAt time.Time  `json:"queriedAt"`
+}
+
+type removeSitemapResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	FeedURL     string    `json:"feedUrl"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type siteMovesResult struct {
+	SiteURL   string     `json:"siteUrl"`
+	RowCount  int        `json:"rowCount"`
+	Rows      []siteMove `json:"rows"`
+	QueriedAt time.Time  `json:"queriedAt"`
+}
+
+type siteMove struct {
+	Date      *time.Time `json:"date,omitempty"`
+	MoveScope string     `json:"moveScope"`
+	MoveType  string     `json:"moveType"`
+	SourceURL string     `json:"sourceUrl"`
+	TargetURL string     `json:"targetUrl"`
+}
+
+type submitSiteMoveResult struct {
+	SiteURL     string    `json:"siteUrl"`
+	SourceURL   string    `json:"sourceUrl"`
+	TargetURL   string    `json:"targetUrl"`
+	MoveType    string    `json:"moveType"`
+	MoveScope   string    `json:"moveScope"`
+	Success     bool      `json:"success"`
+	RequestedAt time.Time `json:"requestedAt"`
+}
+
+type submitContentResult struct {
+	SiteURL        string    `json:"siteUrl"`
+	URL            string    `json:"url"`
+	DynamicServing string    `json:"dynamicServing"`
+	Success        bool      `json:"success"`
+	RequestedAt    time.Time `json:"requestedAt"`
+}
+
+type contentSubmissionQuotaResult struct {
+	SiteURL      string    `json:"siteUrl"`
+	DailyQuota   int       `json:"dailyQuota"`
+	MonthlyQuota int       `json:"monthlyQuota"`
+	QueriedAt    time.Time `json:"queriedAt"`
+}
+
 type apiEnvelope[T any] struct {
 	D T `json:"d"`
 }
@@ -406,6 +658,289 @@ type rawKeywordStat struct {
 	Date             wireTime `json:"Date"`
 	Impressions      int      `json:"Impressions"`
 	BroadImpressions int      `json:"BroadImpressions"`
+}
+
+type rawSiteRole struct {
+	Date                    wireTime `json:"Date"`
+	DelegatedCode           string   `json:"DelegatedCode"`
+	DelegatorEmail          string   `json:"DelegatorEmail"`
+	DelegatedCodeOwnerEmail string   `json:"DelegatedCodeOwnerEmail"`
+	Email                   string   `json:"Email"`
+	Expired                 bool     `json:"Expired"`
+	Role                    int      `json:"Role"`
+	Site                    string   `json:"Site"`
+	VerificationSite        string   `json:"VerificationSite"`
+}
+
+type rawBlockedURL struct {
+	Date        wireTime `json:"Date"`
+	EntityType  int      `json:"EntityType"`
+	RequestType int      `json:"RequestType"`
+	URL         string   `json:"Url"`
+}
+
+type rawDetailedQueryStat struct {
+	Date        wireTime `json:"Date"`
+	Clicks      int      `json:"Clicks"`
+	Impressions int      `json:"Impressions"`
+	Position    int      `json:"Position"`
+}
+
+type rawKeywordLookup struct {
+	Query            string `json:"Query"`
+	BroadImpressions int    `json:"BroadImpressions"`
+	Impressions      int    `json:"Impressions"`
+}
+
+type rawFetchedURL struct {
+	Date    wireTime `json:"Date"`
+	Expired bool     `json:"Expired"`
+	Fetched bool     `json:"Fetched"`
+	URL     string   `json:"Url"`
+}
+
+type rawFetchedURLDetails struct {
+	Date     wireTime `json:"Date"`
+	Document string   `json:"Document"`
+	Headers  string   `json:"Headers"`
+	Status   string   `json:"Status"`
+	URL      string   `json:"Url"`
+}
+
+type rawSiteMoveSettings struct {
+	Date      wireTime `json:"Date"`
+	MoveScope int      `json:"MoveScope"`
+	MoveType  int      `json:"MoveType"`
+	SourceURL string   `json:"SourceUrl"`
+	TargetURL string   `json:"TargetUrl"`
+}
+
+type rawAddSiteRoleRequest struct {
+	SiteURL            string `json:"siteUrl"`
+	DelegatedURL       string `json:"delegatedUrl"`
+	UserEmail          string `json:"userEmail"`
+	AuthenticationCode string `json:"authenticationCode"`
+	IsAdministrator    bool   `json:"isAdministrator"`
+	IsReadOnly         bool   `json:"isReadOnly"`
+}
+
+type rawSiteRoleCommandRequest struct {
+	SiteURL  string             `json:"siteUrl"`
+	SiteRole rawSiteRoleCommand `json:"siteRole"`
+}
+
+type rawSiteRoleCommand struct {
+	Date                    string `json:"Date"`
+	Email                   string `json:"Email"`
+	Role                    int    `json:"Role"`
+	Site                    string `json:"Site"`
+	VerificationSite        string `json:"VerificationSite"`
+	DelegatedCode           string `json:"DelegatedCode,omitempty"`
+	DelegatorEmail          string `json:"DelegatorEmail,omitempty"`
+	DelegatedCodeOwnerEmail string `json:"DelegatedCodeOwnerEmail,omitempty"`
+}
+
+type rawBlockedURLCommandRequest struct {
+	SiteURL    string               `json:"siteUrl"`
+	BlockedURL rawBlockedURLCommand `json:"blockedUrl"`
+}
+
+type rawBlockedURLCommand struct {
+	Date        string `json:"Date"`
+	EntityType  int    `json:"EntityType"`
+	RequestType int    `json:"RequestType"`
+	URL         string `json:"Url"`
+}
+
+type rawChildrenURLInfoRequest struct {
+	SiteURL          string              `json:"siteUrl"`
+	URL              string              `json:"url"`
+	Page             int                 `json:"page"`
+	FilterProperties rawFilterProperties `json:"filterProperties"`
+}
+
+type rawFilterProperties struct {
+	CrawlDateFilter      int `json:"CrawlDateFilter"`
+	DiscoveredDateFilter int `json:"DiscoveredDateFilter"`
+	DocFlagsFilters      int `json:"DocFlagsFilters"`
+	HTTPCodeFilters      int `json:"HttpCodeFilters"`
+}
+
+type rawSiteMoveCommandRequest struct {
+	SiteURL  string             `json:"siteUrl"`
+	Settings rawSiteMoveCommand `json:"settings"`
+}
+
+type rawSiteMoveCommand struct {
+	Date      string `json:"Date"`
+	MoveScope int    `json:"MoveScope"`
+	MoveType  int    `json:"MoveType"`
+	SourceURL string `json:"SourceUrl"`
+	TargetURL string `json:"TargetUrl"`
+}
+
+type rawSubmitContentRequest struct {
+	SiteURL        string `json:"siteUrl"`
+	URL            string `json:"url"`
+	HTTPMessage    string `json:"httpMessage"`
+	StructuredData string `json:"structuredData"`
+	DynamicServing int    `json:"dynamicServing"`
+}
+
+type namedEnum struct {
+	value int
+	name  string
+}
+
+var siteRoleValues = []namedEnum{
+	{value: 0, name: "Administrator"},
+	{value: 1, name: "ReadOnly"},
+	{value: 2, name: "ReadWrite"},
+}
+
+var blockedURLEntityTypeValues = []namedEnum{
+	{value: 0, name: "Page"},
+	{value: 1, name: "Directory"},
+}
+
+var blockedURLRequestTypeValues = []namedEnum{
+	{value: 0, name: "CacheOnly"},
+	{value: 1, name: "FullRemoval"},
+}
+
+var crawlDateFilterValues = []namedEnum{
+	{value: 0, name: "Any"},
+	{value: 1, name: "LastWeek"},
+	{value: 2, name: "LastTwoWeeks"},
+	{value: 4, name: "LastThreeWeeks"},
+}
+
+var discoveredDateFilterValues = []namedEnum{
+	{value: 0, name: "Any"},
+	{value: 1, name: "LastWeek"},
+	{value: 2, name: "LastMonth"},
+}
+
+var docFlagsFilterValues = []namedEnum{
+	{value: 0, name: "Any"},
+	{value: 1, name: "IsBlockedByRobotsTxt"},
+	{value: 2, name: "IsMalware"},
+}
+
+var httpCodeFilterValues = []namedEnum{
+	{value: 0, name: "Any"},
+	{value: 1, name: "Code2xx"},
+	{value: 2, name: "Code3xx"},
+	{value: 4, name: "Code301"},
+	{value: 8, name: "Code302"},
+	{value: 16, name: "Code4xx"},
+	{value: 32, name: "Code5xx"},
+	{value: 64, name: "AllOthers"},
+}
+
+var moveScopeValues = []namedEnum{
+	{value: 0, name: "Domain"},
+	{value: 1, name: "Host"},
+	{value: 2, name: "Directory"},
+}
+
+var moveTypeValues = []namedEnum{
+	{value: 0, name: "Local"},
+	{value: 1, name: "Global"},
+}
+
+var dynamicServingValues = []namedEnum{
+	{value: 0, name: "None"},
+	{value: 1, name: "PcLaptop"},
+	{value: 2, name: "Mobile"},
+	{value: 3, name: "Amp"},
+	{value: 4, name: "Tablet"},
+	{value: 5, name: "NonVisualBrowser"},
+}
+
+func decodeSiteRole(value int) string {
+	return decodeEnumValue(value, siteRoleValues)
+}
+
+func encodeSiteRole(value string) (int, error) {
+	return encodeEnumValue("role", value, siteRoleValues)
+}
+
+func decodeBlockedURLEntityType(value int) string {
+	return decodeEnumValue(value, blockedURLEntityTypeValues)
+}
+
+func encodeBlockedURLEntityType(value string) (int, error) {
+	return encodeEnumValue("entity_type", value, blockedURLEntityTypeValues)
+}
+
+func decodeBlockedURLRequestType(value int) string {
+	return decodeEnumValue(value, blockedURLRequestTypeValues)
+}
+
+func encodeBlockedURLRequestType(value string) (int, error) {
+	return encodeEnumValue("request_type", value, blockedURLRequestTypeValues)
+}
+
+func decodeMoveScope(value int) string {
+	return decodeEnumValue(value, moveScopeValues)
+}
+
+func encodeMoveScope(value string) (int, error) {
+	return encodeEnumValue("move_scope", value, moveScopeValues)
+}
+
+func decodeMoveType(value int) string {
+	return decodeEnumValue(value, moveTypeValues)
+}
+
+func encodeMoveType(value string) (int, error) {
+	return encodeEnumValue("move_type", value, moveTypeValues)
+}
+
+func encodeCrawlDateFilter(value string) (int, error) {
+	return encodeEnumValue("crawl_date_filter", value, crawlDateFilterValues)
+}
+
+func encodeDiscoveredDateFilter(value string) (int, error) {
+	return encodeEnumValue("discovered_date_filter", value, discoveredDateFilterValues)
+}
+
+func encodeDocFlagsFilter(value string) (int, error) {
+	return encodeEnumValue("doc_flags_filter", value, docFlagsFilterValues)
+}
+
+func encodeHTTPCodeFilter(value string) (int, error) {
+	return encodeEnumValue("http_code_filter", value, httpCodeFilterValues)
+}
+
+func encodeDynamicServing(value string) (int, error) {
+	return encodeEnumValue("dynamic_serving", value, dynamicServingValues)
+}
+
+func decodeEnumValue(value int, enums []namedEnum) string {
+	for _, item := range enums {
+		if item.value == value {
+			return item.name
+		}
+	}
+
+	return strconv.Itoa(value)
+}
+
+func encodeEnumValue(label string, value string, enums []namedEnum) (int, error) {
+	for _, item := range enums {
+		if item.name == value {
+			return item.value, nil
+		}
+	}
+
+	names := make([]string, len(enums))
+	for i, item := range enums {
+		names[i] = item.name
+	}
+
+	return 0, fmt.Errorf("invalid %s %q; expected one of: %s", label, value, strings.Join(names, ", "))
 }
 
 var crawlIssueFlags = []struct {

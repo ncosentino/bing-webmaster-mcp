@@ -220,6 +220,153 @@ func registerTools(srv *mcp.Server, bingClient *bingwebmaster.Client, indexNowCl
 			return bingClient.GetKeywordStats(ctx, input.Query, input.Country, input.Language)
 		}),
 	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_site", Description: "Remove a site from Bing Webmaster Tools."},
+		toolHandler("removing site", func(ctx context.Context, input removeSiteInput) (any, error) {
+			return bingClient.RemoveSite(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_site_roles", Description: "List delegated site roles for a Bing Webmaster Tools site."},
+		toolHandler("getting site roles", func(ctx context.Context, input getSiteRolesInput) (any, error) {
+			return bingClient.GetSiteRoles(ctx, input.SiteURL, input.IncludeAllSubdomains)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "add_site_role", Description: "Delegate Bing Webmaster Tools access for a site to another user."},
+		toolHandler("adding site role", func(ctx context.Context, input addSiteRoleInput) (any, error) {
+			return bingClient.AddSiteRole(ctx, input.SiteURL, input.DelegatedURL, input.UserEmail, input.AuthenticationCode, input.IsAdministrator, input.IsReadOnly)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_site_role", Description: "Remove delegated Bing Webmaster Tools access for a site user."},
+		toolHandler("removing site role", func(ctx context.Context, input removeSiteRoleInput) (any, error) {
+			return bingClient.RemoveSiteRole(ctx, input.SiteURL, input.Email, input.Role)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_blocked_urls", Description: "List blocked URL removal requests for a site."},
+		toolHandler("getting blocked URLs", func(ctx context.Context, input getBlockedURLsInput) (any, error) {
+			return bingClient.GetBlockedURLs(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "add_blocked_url", Description: "Add a blocked URL removal request for a site."},
+		toolHandler("adding blocked URL", func(ctx context.Context, input addBlockedURLInput) (any, error) {
+			return bingClient.AddBlockedURL(ctx, input.SiteURL, input.URL, input.EntityType, input.RequestType)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_blocked_url", Description: "Remove a blocked URL removal request for a site."},
+		toolHandler("removing blocked URL", func(ctx context.Context, input removeBlockedURLInput) (any, error) {
+			return bingClient.RemoveBlockedURL(ctx, input.SiteURL, input.URL, input.EntityType, input.RequestType)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_query_page_detail_stats", Description: "Get daily stats for a specific query and page combination."},
+		toolHandler("getting query page detail stats", func(ctx context.Context, input getQueryPageDetailStatsInput) (any, error) {
+			return bingClient.GetQueryPageDetailStats(ctx, input.SiteURL, input.Query, input.Page)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_query_traffic_stats", Description: "Get daily clicks and impressions for a specific query."},
+		toolHandler("getting query traffic stats", func(ctx context.Context, input getQueryTrafficStatsInput) (any, error) {
+			return bingClient.GetQueryTrafficStats(ctx, input.SiteURL, input.Query)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_keyword", Description: "Get market-wide keyword impressions for a date range."},
+		toolHandler("getting keyword", func(ctx context.Context, input getKeywordInput) (any, error) {
+			return bingClient.GetKeyword(ctx, input.Query, input.Country, input.Language, input.StartDate, input.EndDate)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_related_keywords", Description: "Get related market-wide keywords and impression counts for a date range."},
+		toolHandler("getting related keywords", func(ctx context.Context, input getRelatedKeywordsInput) (any, error) {
+			return bingClient.GetRelatedKeywords(ctx, input.Query, input.Country, input.Language, input.StartDate, input.EndDate)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_children_url_info", Description: "Get child URL crawl information for a parent URL."},
+		toolHandler("getting child URL info", func(ctx context.Context, input getChildrenURLInfoInput) (any, error) {
+			return bingClient.GetChildrenURLInfo(ctx, input.SiteURL, input.URL, input.Page, input.CrawlDateFilter, input.DiscoveredDateFilter, input.DocFlagsFilter, input.HTTPCodeFilter)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_children_url_traffic_info", Description: "Get child URL traffic information for a parent URL."},
+		toolHandler("getting child URL traffic info", func(ctx context.Context, input getChildrenURLTrafficInfoInput) (any, error) {
+			return bingClient.GetChildrenURLTrafficInfo(ctx, input.SiteURL, input.URL, input.Page)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "fetch_url", Description: "Ask Bing Webmaster Tools to fetch a URL."},
+		toolHandler("fetching URL", func(ctx context.Context, input fetchURLInput) (any, error) {
+			return bingClient.FetchURL(ctx, input.SiteURL, input.URL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "list_fetched_urls", Description: "List URLs previously fetched through Bing Webmaster Tools."},
+		toolHandler("listing fetched URLs", func(ctx context.Context, input listFetchedURLsInput) (any, error) {
+			return bingClient.ListFetchedURLs(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_fetched_url_details", Description: "Get Bing's stored fetch response for a URL."},
+		toolHandler("getting fetched URL details", func(ctx context.Context, input getFetchedURLDetailsInput) (any, error) {
+			return bingClient.GetFetchedURLDetails(ctx, input.SiteURL, input.URL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "remove_sitemap", Description: "Remove a sitemap from Bing Webmaster Tools."},
+		toolHandler("removing sitemap", func(ctx context.Context, input removeSitemapInput) (any, error) {
+			return bingClient.RemoveSitemap(ctx, input.SiteURL, input.FeedURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_site_moves", Description: "List Bing Webmaster Tools site move settings."},
+		toolHandler("getting site moves", func(ctx context.Context, input getSiteMovesInput) (any, error) {
+			return bingClient.GetSiteMoves(ctx, input.SiteURL)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "submit_site_move", Description: "Submit a Bing Webmaster Tools site move request."},
+		toolHandler("submitting site move", func(ctx context.Context, input submitSiteMoveInput) (any, error) {
+			return bingClient.SubmitSiteMove(ctx, input.SiteURL, input.SourceURL, input.TargetURL, input.MoveType, input.MoveScope)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "submit_content", Description: "Submit cached content and structured data for a URL."},
+		toolHandler("submitting content", func(ctx context.Context, input submitContentInput) (any, error) {
+			return bingClient.SubmitContent(ctx, input.SiteURL, input.URL, input.HTTPMessage, input.StructuredData, input.DynamicServing)
+		}),
+	)
+
+	mcp.AddTool(srv,
+		&mcp.Tool{Name: "get_content_submission_quota", Description: "Get Bing content submission quotas for a site."},
+		toolHandler("getting content submission quota", func(ctx context.Context, input getContentSubmissionQuotaInput) (any, error) {
+			return bingClient.GetContentSubmissionQuota(ctx, input.SiteURL)
+		}),
+	)
 }
 
 type listSitesInput struct{}
@@ -322,6 +469,134 @@ type getKeywordStatsInput struct {
 	Query    string `json:"query" jsonschema:"The market-wide search query to analyze."`
 	Country  string `json:"country" jsonschema:"The Bing country market code, for example 'US'."`
 	Language string `json:"language" jsonschema:"The Bing language code, for example 'en'."`
+}
+
+type removeSiteInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL to remove from Bing Webmaster Tools."`
+}
+
+type getSiteRolesInput struct {
+	SiteURL              string `json:"site_url" jsonschema:"The site URL whose delegated roles should be returned."`
+	IncludeAllSubdomains bool   `json:"include_all_subdomains,omitempty" jsonschema:"When true, include delegated roles across all subdomains. Defaults to false."`
+}
+
+type addSiteRoleInput struct {
+	SiteURL            string `json:"site_url" jsonschema:"The site URL that owns the delegated role."`
+	DelegatedURL       string `json:"delegated_url" jsonschema:"The delegated site or subdomain URL being granted."`
+	UserEmail          string `json:"user_email" jsonschema:"The email address receiving access."`
+	AuthenticationCode string `json:"authentication_code" jsonschema:"The Bing verification or authentication code required by the API."`
+	IsAdministrator    bool   `json:"is_administrator,omitempty" jsonschema:"Grant administrator access when true."`
+	IsReadOnly         bool   `json:"is_read_only,omitempty" jsonschema:"Grant read-only access when true."`
+}
+
+type removeSiteRoleInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose delegated role should be removed."`
+	Email   string `json:"email" jsonschema:"The email address whose role should be removed."`
+	Role    string `json:"role" jsonschema:"The role to remove. Allowed values: Administrator, ReadOnly, ReadWrite."`
+}
+
+type getBlockedURLsInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose blocked URL removals should be listed."`
+}
+
+type addBlockedURLInput struct {
+	SiteURL     string `json:"site_url" jsonschema:"The site URL that owns the blocked URL request."`
+	URL         string `json:"url" jsonschema:"The URL or directory to block."`
+	EntityType  string `json:"entity_type,omitempty" jsonschema:"Entity type. Allowed values: Page or Directory. Defaults to Page."`
+	RequestType string `json:"request_type,omitempty" jsonschema:"Removal request type. Allowed values: CacheOnly or FullRemoval. Defaults to CacheOnly."`
+}
+
+type removeBlockedURLInput struct {
+	SiteURL     string `json:"site_url" jsonschema:"The site URL that owns the blocked URL request."`
+	URL         string `json:"url" jsonschema:"The URL or directory whose block should be removed."`
+	EntityType  string `json:"entity_type,omitempty" jsonschema:"Entity type. Allowed values: Page or Directory. Defaults to Page."`
+	RequestType string `json:"request_type,omitempty" jsonschema:"Removal request type. Allowed values: CacheOnly or FullRemoval. Defaults to FullRemoval."`
+}
+
+type getQueryPageDetailStatsInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose detailed query/page stats should be returned."`
+	Query   string `json:"query" jsonschema:"The search query to inspect."`
+	Page    string `json:"page" jsonschema:"The page URL to inspect."`
+}
+
+type getQueryTrafficStatsInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose query traffic stats should be returned."`
+	Query   string `json:"query" jsonschema:"The search query to inspect."`
+}
+
+type getKeywordInput struct {
+	Query     string `json:"query" jsonschema:"The market-wide search query to inspect."`
+	Country   string `json:"country" jsonschema:"The Bing country market code, for example 'US'."`
+	Language  string `json:"language" jsonschema:"The Bing language code, for example 'en'."`
+	StartDate string `json:"start_date" jsonschema:"The inclusive start date in YYYY-MM-DD format."`
+	EndDate   string `json:"end_date" jsonschema:"The inclusive end date in YYYY-MM-DD format."`
+}
+
+type getRelatedKeywordsInput struct {
+	Query     string `json:"query" jsonschema:"The market-wide search query whose related keywords should be returned."`
+	Country   string `json:"country" jsonschema:"The Bing country market code, for example 'US'."`
+	Language  string `json:"language" jsonschema:"The Bing language code, for example 'en'."`
+	StartDate string `json:"start_date" jsonschema:"The inclusive start date in YYYY-MM-DD format."`
+	EndDate   string `json:"end_date" jsonschema:"The inclusive end date in YYYY-MM-DD format."`
+}
+
+type getChildrenURLInfoInput struct {
+	SiteURL              string `json:"site_url" jsonschema:"The site URL that owns the parent URL."`
+	URL                  string `json:"url" jsonschema:"The parent URL whose child crawl information should be returned."`
+	Page                 int    `json:"page,omitempty" jsonschema:"Zero-based page number. Defaults to 0 when omitted."`
+	CrawlDateFilter      string `json:"crawl_date_filter,omitempty" jsonschema:"Allowed values: Any, LastWeek, LastTwoWeeks, LastThreeWeeks. Defaults to Any."`
+	DiscoveredDateFilter string `json:"discovered_date_filter,omitempty" jsonschema:"Allowed values: Any, LastWeek, LastMonth. Defaults to Any."`
+	DocFlagsFilter       string `json:"doc_flags_filter,omitempty" jsonschema:"Allowed values: Any, IsBlockedByRobotsTxt, IsMalware. Defaults to Any."`
+	HTTPCodeFilter       string `json:"http_code_filter,omitempty" jsonschema:"Allowed values: Any, Code2xx, Code3xx, Code301, Code302, Code4xx, Code5xx, AllOthers. Defaults to Any."`
+}
+
+type getChildrenURLTrafficInfoInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL that owns the parent URL."`
+	URL     string `json:"url" jsonschema:"The parent URL whose child traffic information should be returned."`
+	Page    int    `json:"page,omitempty" jsonschema:"Zero-based page number. Defaults to 0 when omitted."`
+}
+
+type fetchURLInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL that owns the URL to fetch."`
+	URL     string `json:"url" jsonschema:"The URL Bing should fetch."`
+}
+
+type listFetchedURLsInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose fetched URLs should be listed."`
+}
+
+type getFetchedURLDetailsInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL that owns the fetched URL."`
+	URL     string `json:"url" jsonschema:"The URL whose fetch details should be returned."`
+}
+
+type removeSitemapInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL that owns the sitemap."`
+	FeedURL string `json:"feed_url" jsonschema:"The sitemap feed URL to remove."`
+}
+
+type getSiteMovesInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose move settings should be returned."`
+}
+
+type submitSiteMoveInput struct {
+	SiteURL   string `json:"site_url" jsonschema:"The site URL that owns the move submission."`
+	SourceURL string `json:"source_url" jsonschema:"The source URL or scope being moved."`
+	TargetURL string `json:"target_url" jsonschema:"The target URL or scope for the move."`
+	MoveType  string `json:"move_type,omitempty" jsonschema:"Allowed values: Local or Global. Defaults to Local."`
+	MoveScope string `json:"move_scope,omitempty" jsonschema:"Allowed values: Domain, Host, Directory. Defaults to Domain."`
+}
+
+type submitContentInput struct {
+	SiteURL        string `json:"site_url" jsonschema:"The site URL that owns the submitted content."`
+	URL            string `json:"url" jsonschema:"The URL whose content is being submitted."`
+	HTTPMessage    string `json:"http_message" jsonschema:"The base64-encoded HTTP message payload."`
+	StructuredData string `json:"structured_data" jsonschema:"The base64-encoded structured data payload."`
+	DynamicServing string `json:"dynamic_serving,omitempty" jsonschema:"Allowed values: None, PcLaptop, Mobile, Amp, Tablet, NonVisualBrowser. Defaults to None."`
+}
+
+type getContentSubmissionQuotaInput struct {
+	SiteURL string `json:"site_url" jsonschema:"The site URL whose content submission quota should be returned."`
 }
 
 func toolHandler[T any](operation string, fn func(context.Context, T) (any, error)) func(context.Context, *mcp.CallToolRequest, T) (*mcp.CallToolResult, any, error) {

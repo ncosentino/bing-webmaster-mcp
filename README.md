@@ -166,16 +166,23 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 ## Available Tools
 
-22 MCP tools are exposed, covering the classic Bing Webmaster API plus one bonus IndexNow tool. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
+43 MCP tools are exposed -- the 22-tool MVP (21 classic Bing Webmaster API operations plus one bonus IndexNow tool) plus 21 Phase 2 tools. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
 
 | Area | Tools |
 |------|-------|
-| Sites | `list_sites`, `add_site`, `verify_site` |
-| Sitemaps | `list_sitemaps`, `get_sitemap_details`, `submit_sitemap` |
+| Sites | `list_sites`, `add_site`, `verify_site`, `remove_site` |
+| Site Access | `get_site_roles`, `add_site_role`, `remove_site_role` |
+| Sitemaps | `list_sitemaps`, `get_sitemap_details`, `submit_sitemap`, `remove_sitemap` |
 | URL Submission & Indexing | `submit_url`, `submit_url_batch`, `submit_url_indexnow`, `get_url_submission_quota` |
+| Content Submission | `submit_content`, `get_content_submission_quota` |
 | Crawling | `get_crawl_issues`, `get_crawl_stats` |
 | URL & Index Inspection | `get_url_info`, `get_url_traffic_info`, `get_url_links`, `get_link_counts` |
-| Search Analytics | `get_rank_and_traffic_stats`, `get_query_stats`, `get_page_stats`, `get_page_query_stats`, `get_query_page_stats`, `get_keyword_stats` |
+| Directory Inspection | `get_children_url_info`, `get_children_url_traffic_info` |
+| Blocked URLs | `get_blocked_urls`, `add_blocked_url`, `remove_blocked_url` |
+| Fetch Diagnostics | `fetch_url`, `list_fetched_urls`, `get_fetched_url_details` |
+| Site Moves | `get_site_moves`, `submit_site_move` |
+| Search Analytics | `get_rank_and_traffic_stats`, `get_query_stats`, `get_page_stats`, `get_page_query_stats`, `get_query_page_stats`, `get_query_page_detail_stats`, `get_query_traffic_stats`, `get_keyword_stats` |
+| Keyword Research | `get_keyword`, `get_related_keywords` |
 
 **Example prompts:**
 
@@ -283,7 +290,7 @@ dotnet test BingWebmasterMcp.slnx
 
 ## Roadmap
 
-The current release covers a curated MVP of 22 tools. Bing's full API surface is much larger (~50 operations) -- see the [Roadmap](https://github.devleader.ca/bing-webmaster-mcp/roadmap/) for what's planned in Phase 2 (site role delegation, blocked URLs, fetch-as-Bing, content submission API, full OAuth 2.0) and Phase 3 (URL normalization, geo-targeting, connected pages, page preview blocks).
+The current release covers 43 tools: the 22-tool MVP plus Phase 2 (site role delegation, blocked URLs, fetch-as-Bing, site moves, the Content Submission API). See the [Roadmap](https://github.devleader.ca/bing-webmaster-mcp/roadmap/) for what's still planned: Phase 3 (URL normalization, geo-targeting, connected pages, page preview blocks) and Phase 4 (full OAuth 2.0 alongside the API key).
 
 ---
 

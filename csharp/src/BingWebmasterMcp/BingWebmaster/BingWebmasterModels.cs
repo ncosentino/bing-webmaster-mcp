@@ -218,6 +218,224 @@ internal sealed record KeywordStatsResponse(
     IReadOnlyList<KeywordStatsEntry> Rows,
     DateTimeOffset QueriedAt);
 
+internal sealed record RemoveSiteResponse(
+    string SiteUrl,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record SiteRoleEntry(
+    string Email,
+    string Role,
+    string Site,
+    string VerificationSite,
+    bool Expired,
+    string? DelegatorEmail,
+    string? DelegatedCode,
+    string? DelegatedCodeOwnerEmail,
+    DateTimeOffset Date);
+
+internal sealed record GetSiteRolesResponse(
+    string SiteUrl,
+    bool IncludeAllSubdomains,
+    int RowCount,
+    IReadOnlyList<SiteRoleEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record AddSiteRoleResponse(
+    string SiteUrl,
+    string DelegatedUrl,
+    string UserEmail,
+    bool IsAdministrator,
+    bool IsReadOnly,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record RemoveSiteRoleResponse(
+    string SiteUrl,
+    string Email,
+    string Role,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record BlockedUrlEntry(
+    string Url,
+    string EntityType,
+    string RequestType,
+    DateTimeOffset Date);
+
+internal sealed record GetBlockedUrlsResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<BlockedUrlEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record AddBlockedUrlResponse(
+    string SiteUrl,
+    string Url,
+    string EntityType,
+    string RequestType,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record RemoveBlockedUrlResponse(
+    string SiteUrl,
+    string Url,
+    string EntityType,
+    string RequestType,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record DetailedQueryStatEntry(
+    DateTimeOffset Date,
+    int Clicks,
+    int Impressions,
+    int Position);
+
+internal sealed record QueryPageDetailStatsResponse(
+    string SiteUrl,
+    string Query,
+    string Page,
+    int RowCount,
+    IReadOnlyList<DetailedQueryStatEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record QueryTrafficStatsResponse(
+    string SiteUrl,
+    string Query,
+    int RowCount,
+    IReadOnlyList<RankAndTrafficStatEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record GetKeywordResponse(
+    string Query,
+    string Country,
+    string Language,
+    string StartDate,
+    string EndDate,
+    bool Found,
+    int Impressions,
+    int BroadImpressions,
+    DateTimeOffset QueriedAt);
+
+internal sealed record RelatedKeywordEntry(
+    string Query,
+    int Impressions,
+    int BroadImpressions);
+
+internal sealed record RelatedKeywordsResponse(
+    string Query,
+    string Country,
+    string Language,
+    string StartDate,
+    string EndDate,
+    int RowCount,
+    IReadOnlyList<RelatedKeywordEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record ChildUrlInfoEntry(
+    string Url,
+    bool IsPage,
+    int HttpStatus,
+    int DocumentSize,
+    int AnchorCount,
+    DateTimeOffset? DiscoveryDate,
+    DateTimeOffset? LastCrawledDate,
+    int TotalChildUrlCount);
+
+internal sealed record ChildrenUrlInfoResponse(
+    string SiteUrl,
+    string Url,
+    int Page,
+    string CrawlDateFilter,
+    string DiscoveredDateFilter,
+    string DocFlagsFilter,
+    string HttpCodeFilter,
+    int RowCount,
+    IReadOnlyList<ChildUrlInfoEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record ChildUrlTrafficInfoEntry(
+    string Url,
+    bool IsPage,
+    int Clicks,
+    int Impressions);
+
+internal sealed record ChildrenUrlTrafficInfoResponse(
+    string SiteUrl,
+    string Url,
+    int Page,
+    int RowCount,
+    IReadOnlyList<ChildUrlTrafficInfoEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record FetchUrlResponse(
+    string SiteUrl,
+    string Url,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record FetchedUrlEntry(
+    string Url,
+    DateTimeOffset Date,
+    bool Fetched,
+    bool Expired);
+
+internal sealed record ListFetchedUrlsResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<FetchedUrlEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record FetchedUrlDetailsResponse(
+    string SiteUrl,
+    string Url,
+    DateTimeOffset Date,
+    string Status,
+    string Headers,
+    string Document,
+    DateTimeOffset QueriedAt);
+
+internal sealed record RemoveSitemapResponse(
+    string SiteUrl,
+    string FeedUrl,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record SiteMoveEntry(
+    DateTimeOffset Date,
+    string MoveScope,
+    string MoveType,
+    string SourceUrl,
+    string TargetUrl);
+
+internal sealed record GetSiteMovesResponse(
+    string SiteUrl,
+    int RowCount,
+    IReadOnlyList<SiteMoveEntry> Rows,
+    DateTimeOffset QueriedAt);
+
+internal sealed record SubmitSiteMoveResponse(
+    string SiteUrl,
+    string SourceUrl,
+    string TargetUrl,
+    string MoveType,
+    string MoveScope,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record SubmitContentResponse(
+    string SiteUrl,
+    string Url,
+    string DynamicServing,
+    bool Success,
+    DateTimeOffset RequestedAt);
+
+internal sealed record ContentSubmissionQuotaResponse(
+    string SiteUrl,
+    int DailyQuota,
+    int MonthlyQuota,
+    DateTimeOffset QueriedAt);
+
 internal sealed record ErrorResult(string Error);
 
 internal sealed class ApiSite
@@ -454,6 +672,144 @@ internal sealed class ApiKeywordStat
     public int BroadImpressions { get; set; }
 }
 
+internal sealed class ApiSiteRole
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("DelegatedCode")]
+    public string? DelegatedCode { get; set; }
+
+    [JsonPropertyName("DelegatorEmail")]
+    public string? DelegatorEmail { get; set; }
+
+    [JsonPropertyName("DelegatedCodeOwnerEmail")]
+    public string? DelegatedCodeOwnerEmail { get; set; }
+
+    [JsonPropertyName("Email")]
+    public string Email { get; set; } = string.Empty;
+
+    [JsonPropertyName("Expired")]
+    public bool Expired { get; set; }
+
+    [JsonPropertyName("Role")]
+    public int Role { get; set; }
+
+    [JsonPropertyName("Site")]
+    public string Site { get; set; } = string.Empty;
+
+    [JsonPropertyName("VerificationSite")]
+    public string VerificationSite { get; set; } = string.Empty;
+}
+
+internal sealed class ApiBlockedUrl
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("EntityType")]
+    public int EntityType { get; set; }
+
+    [JsonPropertyName("RequestType")]
+    public int RequestType { get; set; }
+
+    [JsonPropertyName("Url")]
+    public string Url { get; set; } = string.Empty;
+}
+
+internal sealed class ApiDetailedQueryStat
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("Clicks")]
+    public int Clicks { get; set; }
+
+    [JsonPropertyName("Impressions")]
+    public int Impressions { get; set; }
+
+    [JsonPropertyName("Position")]
+    public int Position { get; set; }
+}
+
+internal sealed class ApiKeywordDetails
+{
+    [JsonPropertyName("Query")]
+    public string? Query { get; set; }
+
+    [JsonPropertyName("BroadImpressions")]
+    public int BroadImpressions { get; set; }
+
+    [JsonPropertyName("Impressions")]
+    public int Impressions { get; set; }
+}
+
+internal sealed class ApiFetchedUrl
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("Expired")]
+    public bool Expired { get; set; }
+
+    [JsonPropertyName("Fetched")]
+    public bool Fetched { get; set; }
+
+    [JsonPropertyName("Url")]
+    public string Url { get; set; } = string.Empty;
+}
+
+internal sealed class ApiFetchedUrlDetails
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("Document")]
+    public string Document { get; set; } = string.Empty;
+
+    [JsonPropertyName("Headers")]
+    public string Headers { get; set; } = string.Empty;
+
+    [JsonPropertyName("Status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("Url")]
+    public string Url { get; set; } = string.Empty;
+}
+
+internal sealed class ApiSiteMoveSettings
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("MoveScope")]
+    public int MoveScope { get; set; }
+
+    [JsonPropertyName("MoveType")]
+    public int MoveType { get; set; }
+
+    [JsonPropertyName("SourceUrl")]
+    public string SourceUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("TargetUrl")]
+    public string TargetUrl { get; set; } = string.Empty;
+}
+
+internal sealed class ApiFilterProperties
+{
+    [JsonPropertyName("CrawlDateFilter")]
+    public int CrawlDateFilter { get; set; }
+
+    [JsonPropertyName("DiscoveredDateFilter")]
+    public int DiscoveredDateFilter { get; set; }
+
+    [JsonPropertyName("DocFlagsFilters")]
+    public int DocFlagsFilters { get; set; }
+
+    [JsonPropertyName("HttpCodeFilters")]
+    public int HttpCodeFilters { get; set; }
+}
+
 internal sealed class SiteUrlRequest
 {
     [JsonPropertyName("siteUrl")]
@@ -487,6 +843,114 @@ internal sealed class SiteAndUrlListRequest
     public IReadOnlyList<string> UrlList { get; set; } = [];
 }
 
+internal sealed class AddSiteRoleRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("delegatedUrl")]
+    public string DelegatedUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("userEmail")]
+    public string UserEmail { get; set; } = string.Empty;
+
+    [JsonPropertyName("authenticationCode")]
+    public string AuthenticationCode { get; set; } = string.Empty;
+
+    [JsonPropertyName("isAdministrator")]
+    public bool IsAdministrator { get; set; }
+
+    [JsonPropertyName("isReadOnly")]
+    public bool IsReadOnly { get; set; }
+}
+
+internal sealed class RemoveSiteRoleRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("siteRole")]
+    public RemoveSiteRoleItem SiteRole { get; set; } = new();
+}
+
+internal sealed class RemoveSiteRoleItem
+{
+    [JsonPropertyName("Date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("Email")]
+    public string Email { get; set; } = string.Empty;
+
+    [JsonPropertyName("Role")]
+    public int Role { get; set; }
+
+    [JsonPropertyName("Site")]
+    public string Site { get; set; } = string.Empty;
+
+    [JsonPropertyName("VerificationSite")]
+    public string VerificationSite { get; set; } = string.Empty;
+
+    [JsonPropertyName("DelegatedCode")]
+    public string? DelegatedCode { get; set; }
+
+    [JsonPropertyName("DelegatorEmail")]
+    public string? DelegatorEmail { get; set; }
+
+    [JsonPropertyName("DelegatedCodeOwnerEmail")]
+    public string? DelegatedCodeOwnerEmail { get; set; }
+}
+
+internal sealed class BlockedUrlRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("blockedUrl")]
+    public ApiBlockedUrl BlockedUrl { get; set; } = new();
+}
+
+internal sealed class ChildrenUrlInfoRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("page")]
+    public int Page { get; set; }
+
+    [JsonPropertyName("filterProperties")]
+    public ApiFilterProperties FilterProperties { get; set; } = new();
+}
+
+internal sealed class SubmitSiteMoveRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("settings")]
+    public ApiSiteMoveSettings Settings { get; set; } = new();
+}
+
+internal sealed class SubmitContentRequest
+{
+    [JsonPropertyName("siteUrl")]
+    public string SiteUrl { get; set; } = string.Empty;
+
+    [JsonPropertyName("url")]
+    public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("httpMessage")]
+    public string HttpMessage { get; set; } = string.Empty;
+
+    [JsonPropertyName("structuredData")]
+    public string StructuredData { get; set; } = string.Empty;
+
+    [JsonPropertyName("dynamicServing")]
+    public int DynamicServing { get; set; }
+}
+
 internal sealed class IndexNowRequest
 {
     [JsonPropertyName("host")]
@@ -516,10 +980,28 @@ internal sealed class IndexNowRequest
 [JsonSerializable(typeof(ApiRankAndTrafficStat[]))]
 [JsonSerializable(typeof(ApiQueryStat[]))]
 [JsonSerializable(typeof(ApiKeywordStat[]))]
+[JsonSerializable(typeof(ApiSiteRole[]))]
+[JsonSerializable(typeof(ApiBlockedUrl[]))]
+[JsonSerializable(typeof(ApiDetailedQueryStat[]))]
+[JsonSerializable(typeof(ApiKeywordDetails))]
+[JsonSerializable(typeof(ApiKeywordDetails[]))]
+[JsonSerializable(typeof(ApiUrlInfo[]))]
+[JsonSerializable(typeof(ApiUrlTrafficInfo[]))]
+[JsonSerializable(typeof(ApiFetchedUrl[]))]
+[JsonSerializable(typeof(ApiFetchedUrlDetails))]
+[JsonSerializable(typeof(ApiSiteMoveSettings[]))]
+[JsonSerializable(typeof(ApiFilterProperties))]
 [JsonSerializable(typeof(SiteUrlRequest))]
 [JsonSerializable(typeof(SiteAndFeedRequest))]
 [JsonSerializable(typeof(SiteAndUrlRequest))]
 [JsonSerializable(typeof(SiteAndUrlListRequest))]
+[JsonSerializable(typeof(AddSiteRoleRequest))]
+[JsonSerializable(typeof(RemoveSiteRoleRequest))]
+[JsonSerializable(typeof(RemoveSiteRoleItem))]
+[JsonSerializable(typeof(BlockedUrlRequest))]
+[JsonSerializable(typeof(ChildrenUrlInfoRequest))]
+[JsonSerializable(typeof(SubmitSiteMoveRequest))]
+[JsonSerializable(typeof(SubmitContentRequest))]
 [JsonSerializable(typeof(IndexNowRequest))]
 [JsonSerializable(typeof(ListSitesResponse))]
 [JsonSerializable(typeof(AddSiteResponse))]
@@ -543,6 +1025,27 @@ internal sealed class IndexNowRequest
 [JsonSerializable(typeof(PageQueryStatsResponse))]
 [JsonSerializable(typeof(QueryPageStatsResponse))]
 [JsonSerializable(typeof(KeywordStatsResponse))]
+[JsonSerializable(typeof(RemoveSiteResponse))]
+[JsonSerializable(typeof(GetSiteRolesResponse))]
+[JsonSerializable(typeof(AddSiteRoleResponse))]
+[JsonSerializable(typeof(RemoveSiteRoleResponse))]
+[JsonSerializable(typeof(GetBlockedUrlsResponse))]
+[JsonSerializable(typeof(AddBlockedUrlResponse))]
+[JsonSerializable(typeof(RemoveBlockedUrlResponse))]
+[JsonSerializable(typeof(QueryPageDetailStatsResponse))]
+[JsonSerializable(typeof(QueryTrafficStatsResponse))]
+[JsonSerializable(typeof(GetKeywordResponse))]
+[JsonSerializable(typeof(RelatedKeywordsResponse))]
+[JsonSerializable(typeof(ChildrenUrlInfoResponse))]
+[JsonSerializable(typeof(ChildrenUrlTrafficInfoResponse))]
+[JsonSerializable(typeof(FetchUrlResponse))]
+[JsonSerializable(typeof(ListFetchedUrlsResponse))]
+[JsonSerializable(typeof(FetchedUrlDetailsResponse))]
+[JsonSerializable(typeof(RemoveSitemapResponse))]
+[JsonSerializable(typeof(GetSiteMovesResponse))]
+[JsonSerializable(typeof(SubmitSiteMoveResponse))]
+[JsonSerializable(typeof(SubmitContentResponse))]
+[JsonSerializable(typeof(ContentSubmissionQuotaResponse))]
 [JsonSerializable(typeof(ErrorResult))]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
