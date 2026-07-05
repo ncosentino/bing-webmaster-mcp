@@ -18,6 +18,15 @@ const httpTimeout = 30 * time.Second
 // It is a variable so tests can override it to point at a local test server.
 var apiBaseURL = "https://ssl.bing.com/webmaster/api.svc/json"
 
+// SetBaseURL overrides the Bing Webmaster API base URL. Intended for pointing
+// the compiled binary at a local mock server during end-to-end testing; empty
+// values are ignored so the real API remains the default in production.
+func SetBaseURL(url string) {
+	if url != "" {
+		apiBaseURL = url
+	}
+}
+
 type apiRequestError struct {
 	StatusCode int
 	Body       string

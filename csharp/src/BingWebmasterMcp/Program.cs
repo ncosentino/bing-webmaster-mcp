@@ -23,6 +23,13 @@ if (string.IsNullOrWhiteSpace(apiKey))
     return 1;
 }
 
+// Undocumented test-only hooks: point the compiled binary at a local mock server for
+// end-to-end testing. Left unset, both clients target the real Bing endpoints.
+var webmasterBaseUrlOverride = NonEmpty(Environment.GetEnvironmentVariable("BING_WEBMASTER_API_BASE_URL"));
+var indexNowBaseUrlOverride = NonEmpty(Environment.GetEnvironmentVariable("BING_INDEXNOW_API_BASE_URL"));
+
+static string? NonEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
 var builder = Host.CreateApplicationBuilder(args);
 
 // All logs must go to stderr to avoid corrupting the MCP STDIO stream.
@@ -44,13 +51,13 @@ builder.Services
 builder.Services.AddTransient<BingWebmasterClient>(sp =>
 {
     var factory = sp.GetRequiredService<IHttpClientFactory>();
-    return new BingWebmasterClient(factory.CreateClient(nameof(BingWebmasterClient)), apiKey!);
+    return new BingWebmasterClient(factory.CreateClient(nameof(BingWebmasterClient)), apiKey!, webmasterBaseUrlOverride);
 });
 
 builder.Services.AddTransient<IndexNowClient>(sp =>
 {
     var factory = sp.GetRequiredService<IHttpClientFactory>();
-    return new IndexNowClient(factory.CreateClient(nameof(IndexNowClient)), indexNowKey);
+    return new IndexNowClient(factory.CreateClient(nameof(IndexNowClient)), indexNowKey, indexNowBaseUrlOverride);
 });
 
 builder.Services

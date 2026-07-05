@@ -44,6 +44,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Undocumented test-only hooks: point the compiled binary at a local mock
+	// server for end-to-end testing. Left unset, both clients target the real
+	// Bing endpoints.
+	bingwebmaster.SetBaseURL(os.Getenv("BING_WEBMASTER_API_BASE_URL"))
+	indexnow.SetBaseURL(os.Getenv("BING_INDEXNOW_API_BASE_URL"))
+
 	bingClient := bingwebmaster.NewClient(cfg.APIKey)
 	indexNowClient := indexnow.NewClient(cfg.IndexNowKey)
 
@@ -238,7 +244,14 @@ func registerTools(srv *mcp.Server, bingClient *bingwebmaster.Client, indexNowCl
 	mcp.AddTool(srv,
 		&mcp.Tool{Name: "add_site_role", Description: "Delegate Bing Webmaster Tools access for a site to another user."},
 		toolHandler("adding site role", func(ctx context.Context, input addSiteRoleInput) (any, error) {
-			return bingClient.AddSiteRole(ctx, input.SiteURL, input.DelegatedURL, input.UserEmail, input.AuthenticationCode, input.IsAdministrator, input.IsReadOnly)
+			// IsReadOnly is a *bool (not bool) specifically so an omitted argument
+			// can be told apart from an explicit false -- bool's zero value would
+			// otherwise silently default to false instead of the documented true.
+			isReadOnly := true
+			if input.IsReadOnly != nil {
+				isReadOnly = *input.IsReadOnly
+			}
+			return bingClient.AddSiteRole(ctx, input.SiteURL, input.DelegatedURL, input.UserEmail, input.AuthenticationCode, input.IsAdministrator, isReadOnly)
 		}),
 	)
 
@@ -486,7 +499,7 @@ type addSiteRoleInput struct {
 	UserEmail          string `json:"user_email" jsonschema:"The email address receiving access."`
 	AuthenticationCode string `json:"authentication_code" jsonschema:"The Bing verification or authentication code required by the API."`
 	IsAdministrator    bool   `json:"is_administrator,omitempty" jsonschema:"Grant administrator access when true."`
-	IsReadOnly         bool   `json:"is_read_only,omitempty" jsonschema:"Grant read-only access when true."`
+	IsReadOnly         *bool  `json:"is_read_only,omitempty" jsonschema:"Grant read-only access when true. Defaults to true when omitted."`
 }
 
 type removeSiteRoleInput struct {

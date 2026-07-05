@@ -32,13 +32,26 @@ account with both Go and C# confirmed at parity:
   client bug. This endpoint may have been deprecated or renamed since it was last documented. The
   tool still handles this gracefully (returns a clean error, doesn't crash), but a genuine success
   response for this specific endpoint hasn't been observed.
-- `add_site_role` / `remove_site_role`'s write path is unit-tested but not live-tested (doing so
+- `add_site_role` / `remove_site_role`'s write path is unit-tested and covered by the automated
+  mock-server E2E suite (`tests/e2e/`), but not tested against a real second Bing account (doing so
   safely requires delegating to a second real email address, which wasn't available in testing).
-  `get_site_roles` (read) is confirmed live-working.
+  `get_site_roles` (read) is confirmed live-working. The automated E2E suite did catch a real bug
+  here that live testing had not: Go silently defaulted `is_read_only` to `false` when omitted
+  while C# defaulted it to `true` -- now fixed and permanently regression-tested.
 - `submit_site_move` is unit-tested only -- it's consequential and not easily reversible (see the
   [tool reference](tools/submit-site-move.md)), so it wasn't exercised against a real account.
 - `submit_content` is unit-tested only -- constructing valid base64 HTTP content for a live test
   is complex and this is a rarely-used, advanced capability.
+
+---
+
+## Testing infrastructure
+
+Client-layer unit tests (real HTTP fixtures, both languages) and the automated mock-server E2E
+suite (`tests/e2e/`, all 43 tools, both languages, runs in CI) are both required and neither is
+sufficient alone -- unit tests cannot reach MCP's own argument-binding layer, which is exactly
+where three real bugs hid until the E2E suite was built. See
+[End-to-End Testing](building.md#end-to-end-testing) for what's covered and how to run it.
 
 ---
 

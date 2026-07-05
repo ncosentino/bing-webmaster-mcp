@@ -63,6 +63,46 @@ jobs:
       - name: Test
         run: dotnet test BingWebmasterMcp.slnx --no-build -c Release --logger "console;verbosity=minimal"
 
+  e2e:
+    name: End-to-end MCP protocol tests
+    runs-on: ubuntu-latest
+    needs: [go, csharp]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+
+      - name: Build Go binary
+        working-directory: go
+        run: go build -o bwt-mcp-go .
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build C# binary
+        working-directory: csharp
+        run: |
+          dotnet restore BingWebmasterMcp.slnx
+          dotnet build BingWebmasterMcp.slnx --no-restore -c Release
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run E2E suite
+        run: python -m pytest tests/e2e -v
+
   docs:
     name: Build and deploy documentation
     runs-on: ubuntu-latest

@@ -77,6 +77,27 @@ func TestSubmitURLs_KeyOverrideWins(t *testing.T) {
 	}
 }
 
+func TestSetBaseURL_OverridesWhenNonEmpty(t *testing.T) {
+	previous := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previous })
+
+	SetBaseURL("http://127.0.0.1:9999/mock")
+	if apiBaseURL != "http://127.0.0.1:9999/mock" {
+		t.Fatalf("apiBaseURL = %q, want override", apiBaseURL)
+	}
+}
+
+func TestSetBaseURL_IgnoresEmptyString(t *testing.T) {
+	previous := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previous })
+	apiBaseURL = "https://sentinel.test"
+
+	SetBaseURL("")
+	if apiBaseURL != "https://sentinel.test" {
+		t.Fatalf("apiBaseURL = %q, want unchanged sentinel", apiBaseURL)
+	}
+}
+
 func TestSubmitURLs_MissingKeyFails(t *testing.T) {
 	client := NewClient("")
 	_, err := client.SubmitURLs(context.Background(), "example.com", []string{"https://example.com/a"}, "", "")

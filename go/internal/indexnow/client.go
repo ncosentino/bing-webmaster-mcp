@@ -17,6 +17,15 @@ const httpTimeout = 30 * time.Second
 // It is a variable so tests can override it to point at a local test server.
 var apiBaseURL = "https://www.bing.com/indexnow"
 
+// SetBaseURL overrides the IndexNow endpoint. Intended for pointing the
+// compiled binary at a local mock server during end-to-end testing; empty
+// values are ignored so the real endpoint remains the default in production.
+func SetBaseURL(url string) {
+	if url != "" {
+		apiBaseURL = url
+	}
+}
+
 // Client calls the IndexNow endpoint.
 type Client struct {
 	httpClient *http.Client
