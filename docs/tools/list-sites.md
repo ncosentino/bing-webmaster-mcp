@@ -20,7 +20,7 @@ No parameters required.
 {
   "sites": [
     {
-      "url": "https://www.example.com/",
+      "siteUrl": "https://www.example.com/",
       "isVerified": true,
       "dnsVerificationCode": "abc123...",
       "authenticationCode": "def456..."

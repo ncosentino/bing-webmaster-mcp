@@ -104,7 +104,7 @@ type feed struct {
 type sitemapDetailResult struct {
 	SiteURL   string    `json:"siteUrl"`
 	FeedURL   string    `json:"feedUrl"`
-	Sitemap   feed      `json:"sitemap"`
+	Sitemap   *feed     `json:"sitemap,omitempty"`
 	QueriedAt time.Time `json:"queriedAt"`
 }
 
@@ -152,7 +152,8 @@ type crawlIssue struct {
 
 type crawlStatsResult struct {
 	SiteURL   string      `json:"siteUrl"`
-	Stats     []crawlStat `json:"stats"`
+	RowCount  int         `json:"rowCount"`
+	Rows      []crawlStat `json:"rows"`
 	QueriedAt time.Time   `json:"queriedAt"`
 }
 
@@ -223,7 +224,8 @@ type linkCount struct {
 
 type rankAndTrafficStatsResult struct {
 	SiteURL   string            `json:"siteUrl"`
-	Stats     []rankTrafficStat `json:"stats"`
+	RowCount  int               `json:"rowCount"`
+	Rows      []rankTrafficStat `json:"rows"`
 	QueriedAt time.Time         `json:"queriedAt"`
 }
 
@@ -235,7 +237,8 @@ type rankTrafficStat struct {
 
 type queryStatsResult struct {
 	SiteURL   string      `json:"siteUrl"`
-	Stats     []queryStat `json:"stats"`
+	RowCount  int         `json:"rowCount"`
+	Rows      []queryStat `json:"rows"`
 	QueriedAt time.Time   `json:"queriedAt"`
 }
 
@@ -250,7 +253,8 @@ type queryStat struct {
 
 type pageStatsResult struct {
 	SiteURL   string     `json:"siteUrl"`
-	Stats     []pageStat `json:"stats"`
+	RowCount  int        `json:"rowCount"`
+	Rows      []pageStat `json:"rows"`
 	QueriedAt time.Time  `json:"queriedAt"`
 }
 
@@ -266,14 +270,16 @@ type pageStat struct {
 type pageQueryStatsResult struct {
 	SiteURL   string      `json:"siteUrl"`
 	Page      string      `json:"page"`
-	Stats     []queryStat `json:"stats"`
+	RowCount  int         `json:"rowCount"`
+	Rows      []queryStat `json:"rows"`
 	QueriedAt time.Time   `json:"queriedAt"`
 }
 
 type queryPageStatsResult struct {
 	SiteURL   string     `json:"siteUrl"`
 	Query     string     `json:"query"`
-	Stats     []pageStat `json:"stats"`
+	RowCount  int        `json:"rowCount"`
+	Rows      []pageStat `json:"rows"`
 	QueriedAt time.Time  `json:"queriedAt"`
 }
 
@@ -281,7 +287,8 @@ type keywordStatsResult struct {
 	Query     string        `json:"query"`
 	Country   string        `json:"country"`
 	Language  string        `json:"language"`
-	Stats     []keywordStat `json:"stats"`
+	RowCount  int           `json:"rowCount"`
+	Rows      []keywordStat `json:"rows"`
 	QueriedAt time.Time     `json:"queriedAt"`
 }
 

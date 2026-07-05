@@ -177,7 +177,7 @@ public sealed class BingWebmasterClientTests
         Assert.Equal(HttpMethod.Get, capturedRequest!.Method);
         Assert.Equal("https://example.test/api/GetUserSites?apikey=test-key", capturedRequest.RequestUri!.AbsoluteUri);
         Assert.Single(result.Sites);
-        Assert.Equal("https://example.test", result.Sites[0].Url);
+        Assert.Equal("https://example.test", result.Sites[0].SiteUrl);
         Assert.True(result.Sites[0].IsVerified);
         Assert.Equal("dns-code", result.Sites[0].DnsVerificationCode);
         Assert.Equal("meta-code", result.Sites[0].AuthenticationCode);

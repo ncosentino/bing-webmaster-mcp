@@ -22,7 +22,8 @@ index totals over time.
 ```json
 {
   "siteUrl": "https://www.example.com/",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "date": "2026-02-20T00:00:00Z",
       "crawledPages": 412,

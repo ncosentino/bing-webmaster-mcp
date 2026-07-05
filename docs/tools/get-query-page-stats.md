@@ -23,7 +23,8 @@ Get the pages ranking for a specific search query.
 {
   "siteUrl": "https://www.example.com/",
   "query": "blazor dependency injection",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "page": "https://www.example.com/blog/my-post",
       "date": "2026-02-20T00:00:00Z",

@@ -13,6 +13,13 @@ import sys
 import threading
 import time
 
+# Bing responses can contain arbitrary Unicode (real search queries, non-English content).
+# Reconfigure our own stdout/stderr so printing that data never raises UnicodeEncodeError,
+# regardless of the host console's default codepage (notably an issue on Windows).
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 
 class McpClient:
     def __init__(self, command, env):
@@ -23,6 +30,8 @@ class McpClient:
             stderr=subprocess.PIPE,
             env=env,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
         )
         self._next_id = 1
@@ -103,6 +112,37 @@ class McpClient:
                 pass
 
 
+# Tools that only read data -- safe to call against a real account.
+READ_ONLY_TOOLS = frozenset({
+    "list_sites",
+    "list_sitemaps",
+    "get_sitemap_details",
+    "get_url_submission_quota",
+    "get_crawl_issues",
+    "get_crawl_stats",
+    "get_url_info",
+    "get_url_traffic_info",
+    "get_url_links",
+    "get_link_counts",
+    "get_rank_and_traffic_stats",
+    "get_query_stats",
+    "get_page_stats",
+    "get_page_query_stats",
+    "get_query_page_stats",
+    "get_keyword_stats",
+})
+
+# Tools that add, submit, or otherwise mutate account/site state.
+# NEVER call these against a real account without explicit, informed consent.
+WRITE_TOOLS = frozenset({
+    "add_site",
+    "verify_site",
+    "submit_sitemap",
+    "submit_url",
+    "submit_url_batch",
+    "submit_url_indexnow",
+})
+
 TOOL_CALLS = [
     ("list_sites", {}),
     ("add_site", {"site_url": "https://example.test/"}),
@@ -128,9 +168,29 @@ TOOL_CALLS = [
     ("get_keyword_stats", {"query": "bing webmaster api", "country": "us", "language": "en-US"}),
 ]
 
+_all_tool_names = {n for n, _ in TOOL_CALLS}
+assert READ_ONLY_TOOLS | WRITE_TOOLS == _all_tool_names, (
+    "READ_ONLY_TOOLS/WRITE_TOOLS classification is out of sync with TOOL_CALLS -- "
+    f"unclassified: {_all_tool_names - (READ_ONLY_TOOLS | WRITE_TOOLS)}, "
+    f"unknown: {(READ_ONLY_TOOLS | WRITE_TOOLS) - _all_tool_names}"
+)
+assert not (READ_ONLY_TOOLS & WRITE_TOOLS), "a tool cannot be both read-only and a write tool"
 
-def run(label, command, env):
-    print(f"\n{'=' * 70}\n{label}\n{'=' * 70}")
+
+def _substitute_placeholder(value, site_url, host):
+    """Recursively replace the https://example.test/ placeholder with a real site."""
+    if isinstance(value, str):
+        return (
+            value.replace("https://example.test/", site_url)
+            .replace("example.test", host)
+        )
+    if isinstance(value, list):
+        return [_substitute_placeholder(v, site_url, host) for v in value]
+    return value
+
+
+def run(label, command, env, read_only=False, site_url=None):
+    print(f"\n{'=' * 70}\n{label}{'  [READ-ONLY MODE]' if read_only else ''}\n{'=' * 70}")
     client = McpClient(command, env)
     results = {}
     try:
@@ -145,8 +205,22 @@ def run(label, command, env):
         results["tool_count"] = len(tools)
         results["tool_names"] = tool_names
 
+        host = None
+        if site_url:
+            host = site_url.split("://", 1)[-1].strip("/").split("/", 1)[0]
+
+        calls = TOOL_CALLS
+        if read_only:
+            calls = [(n, a) for n, a in TOOL_CALLS if n in READ_ONLY_TOOLS]
+            skipped = [n for n, _ in TOOL_CALLS if n not in READ_ONLY_TOOLS]
+            print(f"Read-only mode: skipping {len(skipped)} write tools entirely: {skipped}")
+            # Safety net: never allow a write tool through even if the filter above has a bug.
+            assert all(n not in WRITE_TOOLS for n, _ in calls), "refusing to proceed: a write tool leaked into read-only call list"
+
         call_results = {}
-        for name, args in TOOL_CALLS:
+        for name, args in calls:
+            if site_url:
+                args = {k: _substitute_placeholder(v, site_url, host) for k, v in args.items()}
             try:
                 resp = client.call_tool(name, args)
                 if "error" in resp:
@@ -156,7 +230,7 @@ def run(label, command, env):
                 content = resp.get("result", {}).get("content", [])
                 text = content[0]["text"] if content else "<no content>"
                 call_results[name] = {"raw_text": text}
-                snippet = text if len(text) < 200 else text[:200] + "..."
+                snippet = text if len(text) < 300 else text[:300] + "..."
                 print(f"  [OK] {name}: {snippet}")
             except Exception as e:
                 call_results[name] = {"exception": str(e)}
@@ -176,6 +250,17 @@ if __name__ == "__main__":
     parser.add_argument("--api-key", default="test-invalid-key-e2e")
     parser.add_argument("--indexnow-key", default="")
     parser.add_argument("--output", default=None)
+    parser.add_argument(
+        "--read-only",
+        action="store_true",
+        help="Only call read-only tools -- skips add_site/verify_site/submit_* entirely. "
+        "Required when testing against a real account you don't want mutated.",
+    )
+    parser.add_argument(
+        "--site-url",
+        default=None,
+        help="Substitute this for the https://example.test/ placeholder in every tool call.",
+    )
     args = parser.parse_args()
 
     import os
@@ -185,7 +270,7 @@ if __name__ == "__main__":
     if args.indexnow_key:
         env["BING_INDEXNOW_KEY"] = args.indexnow_key
 
-    results = run(args.label, args.command, env)
+    results = run(args.label, args.command, env, read_only=args.read_only, site_url=args.site_url)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

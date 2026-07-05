@@ -21,7 +21,8 @@ Get traffic statistics for your site's top pages.
 ```json
 {
   "siteUrl": "https://www.example.com/",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "page": "https://www.example.com/blog/my-post",
       "date": "2026-02-20T00:00:00Z",

@@ -101,20 +101,55 @@ func (c *Client) ListSitemaps(ctx context.Context, siteURL string) (*sitemapList
 }
 
 // GetSitemapDetails returns details for a submitted sitemap.
+//
+// Bing's real response shape for this endpoint is unconfirmed by Microsoft's public docs.
+// Live testing against a real account showed it can return either a single feed object or an
+// array (e.g. for sitemap index files with multiple constituent feeds) -- this handles both.
 func (c *Client) GetSitemapDetails(ctx context.Context, siteURL string, feedURL string) (*sitemapDetailResult, error) {
-	// Microsoft's public docs do not provide a complete verified JSON sample for GetFeedDetails.
-	// We therefore deserialize it using the known Feed wire shape and tolerate missing fields.
-	var raw rawFeed
-	if err := c.get(ctx, "GetFeedDetails", map[string]string{"siteUrl": siteURL, "feedUrl": feedURL}, &raw); err != nil {
+	var rawEnvelope json.RawMessage
+	if err := c.get(ctx, "GetFeedDetails", map[string]string{"siteUrl": siteURL, "feedUrl": feedURL}, &rawEnvelope); err != nil {
 		return nil, err
+	}
+
+	sitemap, err := parseFeedDetailsPayload(rawEnvelope)
+	if err != nil {
+		return nil, fmt.Errorf("parsing GetFeedDetails payload: %w", err)
 	}
 
 	return &sitemapDetailResult{
 		SiteURL:   siteURL,
 		FeedURL:   feedURL,
-		Sitemap:   mapFeed(raw),
+		Sitemap:   sitemap,
 		QueriedAt: time.Now().UTC(),
 	}, nil
+}
+
+// parseFeedDetailsPayload accepts either a single feed object or an array of feed objects
+// (using the first element), returning nil if the payload is empty or an empty array.
+func parseFeedDetailsPayload(payload json.RawMessage) (*feed, error) {
+	trimmed := bytes.TrimSpace(payload)
+	if len(trimmed) == 0 || string(trimmed) == "null" {
+		return nil, nil
+	}
+
+	if trimmed[0] == '[' {
+		var rawFeeds []rawFeed
+		if err := json.Unmarshal(trimmed, &rawFeeds); err != nil {
+			return nil, err
+		}
+		if len(rawFeeds) == 0 {
+			return nil, nil
+		}
+		mapped := mapFeed(rawFeeds[0])
+		return &mapped, nil
+	}
+
+	var raw rawFeed
+	if err := json.Unmarshal(trimmed, &raw); err != nil {
+		return nil, err
+	}
+	mapped := mapFeed(raw)
+	return &mapped, nil
 }
 
 // SubmitSitemap submits a sitemap feed to Bing Webmaster Tools.
@@ -228,7 +263,7 @@ func (c *Client) GetCrawlStats(ctx context.Context, siteURL string) (*crawlStats
 		}
 	}
 
-	return &crawlStatsResult{SiteURL: siteURL, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &crawlStatsResult{SiteURL: siteURL, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 // GetURLInfo returns index status for a single URL.
@@ -331,7 +366,7 @@ func (c *Client) GetRankAndTrafficStats(ctx context.Context, siteURL string) (*r
 		stats[i] = rankTrafficStat{Date: timePointer(item.Date), Clicks: item.Clicks, Impressions: item.Impressions}
 	}
 
-	return &rankAndTrafficStatsResult{SiteURL: siteURL, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &rankAndTrafficStatsResult{SiteURL: siteURL, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 // GetQueryStats returns top query statistics for a site.
@@ -341,7 +376,7 @@ func (c *Client) GetQueryStats(ctx context.Context, siteURL string) (*queryStats
 		return nil, err
 	}
 
-	return &queryStatsResult{SiteURL: siteURL, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &queryStatsResult{SiteURL: siteURL, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 // GetPageStats returns top page statistics for a site.
@@ -351,7 +386,7 @@ func (c *Client) GetPageStats(ctx context.Context, siteURL string) (*pageStatsRe
 		return nil, err
 	}
 
-	return &pageStatsResult{SiteURL: siteURL, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &pageStatsResult{SiteURL: siteURL, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 // GetPageQueryStats returns queries for a specific page.
@@ -361,7 +396,7 @@ func (c *Client) GetPageQueryStats(ctx context.Context, siteURL string, page str
 		return nil, err
 	}
 
-	return &pageQueryStatsResult{SiteURL: siteURL, Page: page, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &pageQueryStatsResult{SiteURL: siteURL, Page: page, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 // GetQueryPageStats returns pages for a specific query.
@@ -371,7 +406,7 @@ func (c *Client) GetQueryPageStats(ctx context.Context, siteURL string, query st
 		return nil, err
 	}
 
-	return &queryPageStatsResult{SiteURL: siteURL, Query: query, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &queryPageStatsResult{SiteURL: siteURL, Query: query, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 // GetKeywordStats returns market-wide keyword statistics.
@@ -391,7 +426,7 @@ func (c *Client) GetKeywordStats(ctx context.Context, query string, country stri
 		}
 	}
 
-	return &keywordStatsResult{Query: query, Country: country, Language: language, Stats: stats, QueriedAt: time.Now().UTC()}, nil
+	return &keywordStatsResult{Query: query, Country: country, Language: language, RowCount: len(stats), Rows: stats, QueriedAt: time.Now().UTC()}, nil
 }
 
 func (c *Client) getQueryStats(ctx context.Context, method string, params map[string]string) ([]queryStat, error) {

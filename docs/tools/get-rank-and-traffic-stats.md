@@ -21,7 +21,8 @@ Get the headline daily clicks and impressions trend for a site.
 ```json
 {
   "siteUrl": "https://www.example.com/",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "date": "2026-02-20T00:00:00Z",
       "clicks": 214,

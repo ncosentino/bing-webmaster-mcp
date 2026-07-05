@@ -23,7 +23,8 @@ Get the search queries driving traffic to a specific page.
 {
   "siteUrl": "https://www.example.com/",
   "page": "https://www.example.com/blog/my-post",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "query": "blazor dependency injection",
       "date": "2026-02-20T00:00:00Z",

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace BingWebmasterMcp.BingWebmaster;
 
 internal sealed record SiteInfo(
-    string Url,
+    string SiteUrl,
     bool IsVerified,
     string? DnsVerificationCode,
     string? AuthenticationCode);

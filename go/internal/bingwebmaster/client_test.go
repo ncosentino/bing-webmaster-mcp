@@ -259,6 +259,63 @@ func TestGetSitemapDetails_BestEffortHandlesSparseResponse(t *testing.T) {
 	}
 }
 
+// TestGetSitemapDetails_HandlesArrayResponse is a regression test for a real bug found via
+// live end-to-end testing against a real Bing Webmaster account: Bing sometimes returns an
+// array of feed objects from GetFeedDetails (e.g. for sitemap index files) rather than a single
+// object, which previously crashed with "cannot unmarshal array into Go value of type
+// bingwebmaster.rawFeed".
+func TestGetSitemapDetails_HandlesArrayResponse(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[{"Url":"https://example.test/sitemap-a.xml","Type":"Sitemap","Compressed":false,"FileSize":100,"LastCrawled":"/Date(1732612952000+0000)/","Submitted":"/Date(1732526552000+0000)/","Status":"Success","UrlCount":10},{"Url":"https://example.test/sitemap-b.xml","Type":"Sitemap","Compressed":false,"FileSize":200,"LastCrawled":"/Date(1732612952000+0000)/","Submitted":"/Date(1732526552000+0000)/","Status":"Ignored","UrlCount":20}]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetSitemapDetails(context.Background(), "https://example.test", "https://example.test/sitemap-index.xml")
+	if err != nil {
+		t.Fatalf("GetSitemapDetails error = %v", err)
+	}
+	if result.Sitemap == nil {
+		t.Fatal("expected non-nil Sitemap from array response")
+	}
+	if result.Sitemap.URL != "https://example.test/sitemap-a.xml" {
+		t.Fatalf("URL = %q, want first array item %q", result.Sitemap.URL, "https://example.test/sitemap-a.xml")
+	}
+	if result.Sitemap.URLCount != 10 {
+		t.Fatalf("URLCount = %d, want 10", result.Sitemap.URLCount)
+	}
+}
+
+// TestGetSitemapDetails_HandlesEmptyArrayResponse confirms an empty array (no matching feed)
+// maps to a nil Sitemap rather than erroring.
+func TestGetSitemapDetails_HandlesEmptyArrayResponse(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"d":[]}`))
+	}))
+	defer srv.Close()
+
+	apiBaseURL = srv.URL
+	client := &Client{httpClient: srv.Client(), apiKey: "test-api-key"}
+
+	result, err := client.GetSitemapDetails(context.Background(), "https://example.test", "https://example.test/sitemap.xml")
+	if err != nil {
+		t.Fatalf("GetSitemapDetails error = %v", err)
+	}
+	if result.Sitemap != nil {
+		t.Fatalf("Sitemap = %+v, want nil", result.Sitemap)
+	}
+}
+
 func TestSubmitSitemap_SendsPOSTBody(t *testing.T) {
 	previousBaseURL := apiBaseURL
 	t.Cleanup(func() { apiBaseURL = previousBaseURL })
@@ -456,10 +513,10 @@ func TestGetKeywordStats_UsesQParameterWithoutSiteURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetKeywordStats error = %v", err)
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	if result.Stats[0].Date == nil {
+	if result.Rows[0].Date == nil {
 		t.Fatal("expected parsed date")
 	}
 }
@@ -481,10 +538,10 @@ func TestGetCrawlStats_ParsesDotNetDate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetCrawlStats error = %v", err)
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	got := result.Stats[0].Date
+	got := result.Rows[0].Date
 	if got == nil {
 		t.Fatal("expected date, got nil")
 	}
@@ -674,14 +731,14 @@ func TestGetRankAndTrafficStats_ParsesDotNetDate(t *testing.T) {
 	if method != http.MethodGet {
 		t.Fatalf("method = %q, want GET", method)
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	if result.Stats[0].Date == nil {
+	if result.Rows[0].Date == nil {
 		t.Fatal("expected Date")
 	}
-	if result.Stats[0].Impressions != 300 {
-		t.Fatalf("Impressions = %d, want 300", result.Stats[0].Impressions)
+	if result.Rows[0].Impressions != 300 {
+		t.Fatalf("Impressions = %d, want 300", result.Rows[0].Impressions)
 	}
 }
 
@@ -711,13 +768,13 @@ func TestGetQueryStats_UsesSiteURLAndMapsQueryStats(t *testing.T) {
 	if method != http.MethodGet {
 		t.Fatalf("method = %q, want GET", method)
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	if result.Stats[0].Query != "bing api" {
-		t.Fatalf("Query = %q, want %q", result.Stats[0].Query, "bing api")
+	if result.Rows[0].Query != "bing api" {
+		t.Fatalf("Query = %q, want %q", result.Rows[0].Query, "bing api")
 	}
-	if result.Stats[0].Date == nil {
+	if result.Rows[0].Date == nil {
 		t.Fatal("expected Date")
 	}
 }
@@ -748,13 +805,13 @@ func TestGetPageStats_UsesQueryPayloadFieldAsPage(t *testing.T) {
 	if method != http.MethodGet {
 		t.Fatalf("method = %q, want GET", method)
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	if result.Stats[0].Page != "https://example.test/page" {
-		t.Fatalf("Page = %q, want %q", result.Stats[0].Page, "https://example.test/page")
+	if result.Rows[0].Page != "https://example.test/page" {
+		t.Fatalf("Page = %q, want %q", result.Rows[0].Page, "https://example.test/page")
 	}
-	if result.Stats[0].Date == nil {
+	if result.Rows[0].Date == nil {
 		t.Fatal("expected Date")
 	}
 }
@@ -792,11 +849,11 @@ func TestGetPageQueryStats_UsesPageParameterAndMapsQueries(t *testing.T) {
 	if result.Page != "https://example.test/page" {
 		t.Fatalf("Page = %q, want %q", result.Page, "https://example.test/page")
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	if result.Stats[0].Query != "bing api" {
-		t.Fatalf("Query = %q, want %q", result.Stats[0].Query, "bing api")
+	if result.Rows[0].Query != "bing api" {
+		t.Fatalf("Query = %q, want %q", result.Rows[0].Query, "bing api")
 	}
 }
 
@@ -833,11 +890,11 @@ func TestGetQueryPageStats_UsesQueryParameterAndMapsPages(t *testing.T) {
 	if result.Query != "bing api" {
 		t.Fatalf("Query = %q, want %q", result.Query, "bing api")
 	}
-	if len(result.Stats) != 1 {
-		t.Fatalf("len(Stats) = %d, want 1", len(result.Stats))
+	if len(result.Rows) != 1 {
+		t.Fatalf("len(Rows) = %d, want 1", len(result.Rows))
 	}
-	if result.Stats[0].Page != "https://example.test/page" {
-		t.Fatalf("Page = %q, want %q", result.Stats[0].Page, "https://example.test/page")
+	if result.Rows[0].Page != "https://example.test/page" {
+		t.Fatalf("Page = %q, want %q", result.Rows[0].Page, "https://example.test/page")
 	}
 }
 

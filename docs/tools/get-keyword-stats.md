@@ -26,7 +26,8 @@ to your site).
   "query": "blazor dependency injection",
   "country": "us",
   "language": "en-US",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "date": "2026-02-20T00:00:00Z",
       "impressions": 890,

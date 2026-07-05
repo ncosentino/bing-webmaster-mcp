@@ -21,7 +21,8 @@ Get traffic statistics for your site's top search queries.
 ```json
 {
   "siteUrl": "https://www.example.com/",
-  "stats": [
+  "rowCount": 1,
+  "rows": [
     {
       "query": "blazor dependency injection",
       "date": "2026-02-20T00:00:00Z",
