@@ -115,7 +115,6 @@ nav:
   - Go vs C#: implementations.md
   - Building from Source: building.md
   - Troubleshooting: troubleshooting.md
-  - Roadmap: roadmap.md
   - Articles: articles.md
 
 plugins:

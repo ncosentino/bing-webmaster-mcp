@@ -4,12 +4,11 @@ description: Overview of the 55 MCP tools exposed by the Bing Webmaster Tools MC
 
 # MCP Tools
 
-55 tools are exposed by this MCP server -- the 22-tool MVP (21 classic Bing Webmaster API
-operations plus one bonus IndexNow tool), 21 Phase 2 tools covering deeper site management,
-blocked URLs, fetch diagnostics, site moves, and the Content Submission API, and 12 Phase 3 tools
-covering URL normalization, geo-targeting, connected pages, and page preview blocks. All tools
-work identically across the Go and C# implementations. See the [Roadmap](../roadmap.md) for what's
-planned beyond this set.
+55 tools are exposed by this MCP server, covering the full range of everyday Bing Webmaster Tools
+operations -- site management, sitemaps, URL submission and indexing, crawl diagnostics, search
+analytics, keyword research, URL normalization, geo-targeting, connected pages, and page preview
+blocks -- plus IndexNow support for instant re-indexing. All tools work identically across the Go
+and C# implementations.
 
 | Tool | Area | Description |
 |------|------|-------------|

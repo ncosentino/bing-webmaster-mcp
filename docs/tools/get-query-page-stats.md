@@ -50,5 +50,5 @@ Get the pages ranking for a specific search query.
 
 - Complements [`get_page_query_stats`](get-page-query-stats.md), which answers the reverse
   question (which queries drive traffic to a given page).
-- For a deeper breakdown of a single query+page combination, see the Phase 2
-  `get_query_page_detail_stats` operation on the [Roadmap](../roadmap.md).
+- For a deeper breakdown of a single query+page combination, see
+  [`get_query_page_detail_stats`](get-query-page-detail-stats.md).

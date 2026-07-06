@@ -166,7 +166,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 ## Available Tools
 
-55 MCP tools are exposed -- the 22-tool MVP (21 classic Bing Webmaster API operations plus one bonus IndexNow tool), 21 Phase 2 tools, and 12 Phase 3 tools. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
+55 MCP tools are exposed, covering the full range of Bing Webmaster Tools operations plus IndexNow support for instant re-indexing. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
 
 | Area | Tools |
 |------|-------|
@@ -289,12 +289,6 @@ dotnet publish src/BingWebmasterMcp/BingWebmasterMcp.csproj -r linux-x64 -c Rele
 # Run tests
 dotnet test BingWebmasterMcp.slnx
 ```
-
----
-
-## Roadmap
-
-The current release covers 55 tools: the 22-tool MVP, Phase 2 (site role delegation, blocked URLs, fetch-as-Bing, site moves, the Content Submission API), and Phase 3 (URL normalization, geo-targeting, connected pages, page preview blocks). See the [Roadmap](https://github.devleader.ca/bing-webmaster-mcp/roadmap/) for what's still planned: Phase 4 (full OAuth 2.0 alongside the API key).
 
 ---
 

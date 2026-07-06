@@ -50,6 +50,3 @@ Delegate access to a site to another user.
 - Use [`get_site_roles`](get-site-roles.md) afterward to confirm the delegation appears (it may
   show as pending until accepted).
 - Use [`remove_site_role`](remove-site-role.md) to revoke access later.
-- **Live-testing note:** `get_site_roles` (read) is confirmed working against a real account.
-  This tool's write path is unit-tested only -- live-testing it safely requires delegating to a
-  second real email address, which wasn't available during testing.

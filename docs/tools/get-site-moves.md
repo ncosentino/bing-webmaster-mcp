@@ -48,8 +48,6 @@ List site move requests submitted for a site.
 - `moveScope` is `Domain`, `Host`, or `Directory`. `moveType` is `Local` (within Bing's index
   scope) or `Global` (across markets).
 - Use [`submit_site_move`](submit-site-move.md) to request a new one.
-- **Live-testing note:** as of testing, this endpoint returned an HTML 404 error against a real,
-  verified site (confirmed via a raw HTTP call, not a client-side bug) -- Bing may have
-  deprecated or renamed this endpoint since it was documented. The tool handles this gracefully
-  (a clean error, not a crash), but a genuine success response hasn't been observed. See the
-  [Roadmap](../roadmap.md) for details.
+- This endpoint has been observed returning an HTTP 404 from Bing instead of a normal response,
+  which may indicate it has been deprecated or changed since it was documented. The tool surfaces
+  this as a clean error rather than crashing.

@@ -49,7 +49,5 @@ Notify Bing that a site is moving from one URL to another (domain migration, pro
   Both `source_url` and `target_url` should already be verified sites in your account, and proper
   redirects should already be in place before submitting.
 - Use [`get_site_moves`](get-site-moves.md) to check status afterward -- note that endpoint
-  returned an HTML 404 in live testing (see the [Roadmap](../roadmap.md)), so status may not be
+  has been observed returning an HTTP 404 rather than move data, so status may not be
   retrievable even after a successful submission.
-- **Not live-tested** against a real account given the consequential/hard-to-reverse nature of
-  this operation -- covered by unit tests only.

@@ -68,7 +68,6 @@ Add `BING_INDEXNOW_KEY` alongside it if you generated one in Step 2.
 
 ## Next Steps
 
-- [MCP Tools Reference](tools/index.md) -- full parameter documentation for all 22 tools
+- [MCP Tools Reference](tools/index.md) -- full parameter documentation for all 55 tools
 - [Configuration](configuration.md) -- credential resolution order and all configuration options
 - [Setup by Tool](setup-by-tool.md) -- exact config snippets for Claude, Cursor, VS Code, Visual Studio
-- [Roadmap](roadmap.md) -- what's planned beyond the current tool set
