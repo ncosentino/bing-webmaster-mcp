@@ -325,7 +325,7 @@ func (c *Client) GetURLLinks(ctx context.Context, siteURL string, link string, p
 
 	details := make([]urlLinkDetail, len(raw.Details))
 	for i, item := range raw.Details {
-		details[i] = urlLinkDetail{AnchorText: item.AnchorText, URL: item.URL}
+		details[i] = urlLinkDetail(item)
 	}
 
 	return &urlLinksResult{
@@ -350,7 +350,7 @@ func (c *Client) GetLinkCounts(ctx context.Context, siteURL string, page int) (*
 
 	links := make([]linkCount, len(raw.Links))
 	for i, item := range raw.Links {
-		links[i] = linkCount{Count: item.Count, URL: item.URL}
+		links[i] = linkCount(item)
 	}
 
 	return &linkCountsResult{
@@ -1114,12 +1114,7 @@ func (c *Client) GetChildrenURLTrafficInfo(ctx context.Context, siteURL string, 
 
 	rows := make([]childURLTrafficInfo, len(raw))
 	for i, item := range raw {
-		rows[i] = childURLTrafficInfo{
-			URL:         item.URL,
-			IsPage:      item.IsPage,
-			Clicks:      item.Clicks,
-			Impressions: item.Impressions,
-		}
+		rows[i] = childURLTrafficInfo(item)
 	}
 
 	return &childrenURLTrafficInfoResult{
