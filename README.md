@@ -1,6 +1,6 @@
 # Bing Webmaster Tools MCP Server -- Bing SEO Data for AI Assistants
 
-[![Latest Release](https://img.shields.io/github/v/release/ncosentino/bing-webmaster-mcp?style=flat-square)](https://github.com/ncosentino/bing-webmaster-mcp/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/ncosentino/bing-webmaster-mcp?include_prereleases&style=flat-square)](https://github.com/ncosentino/bing-webmaster-mcp/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&logo=go)](go/go.mod)
 [![.NET Version](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet)](csharp/Directory.Build.props)
