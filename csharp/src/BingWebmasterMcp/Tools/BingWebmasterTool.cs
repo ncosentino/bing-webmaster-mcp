@@ -466,7 +466,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_rank_and_traffic_stats")]
-    [Description("Get Bing clicks and impressions over time for a site.")]
+    [Description("Get Bing clicks and impressions over time for a site. Bing returns a fixed date window; there is no date range parameter.")]
     internal Task<string> GetRankAndTrafficStats(
         [Description("The Bing site URL.")] string site_url,
         CancellationToken cancellationToken = default)
@@ -476,7 +476,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_query_traffic_stats")]
-    [Description("Get Bing clicks and impressions over time for one search query on a site.")]
+    [Description("Get Bing clicks and impressions over time for one search query on a site. Returns Bing's full available daily history; there is no date range parameter to narrow it.")]
     internal Task<string> GetQueryTrafficStats(
         [Description("The Bing site URL.")] string site_url,
         [Description("The search query to inspect.")] string query,
@@ -487,7 +487,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_query_stats")]
-    [Description("Get Bing search query statistics for a site.")]
+    [Description("Get Bing search query statistics for a site. Bing returns a fixed date window; there is no date range parameter.")]
     internal Task<string> GetQueryStats(
         [Description("The Bing site URL.")] string site_url,
         CancellationToken cancellationToken = default)
@@ -497,7 +497,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_page_stats")]
-    [Description("Get Bing page statistics for a site. The output uses page instead of Bing's reused Query field.")]
+    [Description("Get Bing page statistics for a site. The output uses page instead of Bing's reused Query field. Bing returns a fixed date window; there is no date range parameter.")]
     internal Task<string> GetPageStats(
         [Description("The Bing site URL.")] string site_url,
         CancellationToken cancellationToken = default)
@@ -507,7 +507,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_page_query_stats")]
-    [Description("Get Bing search query statistics for a specific page.")]
+    [Description("Get Bing search query statistics for a specific page. Bing returns a fixed date window; there is no date range parameter.")]
     internal Task<string> GetPageQueryStats(
         [Description("The Bing site URL.")] string site_url,
         [Description("The page URL to inspect.")] string page,
@@ -518,7 +518,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_query_page_stats")]
-    [Description("Get Bing page statistics for a specific query. The output uses page instead of Bing's reused Query field.")]
+    [Description("Get Bing page statistics for a specific query. The output uses page instead of Bing's reused Query field. Bing returns a fixed date window; there is no date range parameter.")]
     internal Task<string> GetQueryPageStats(
         [Description("The Bing site URL.")] string site_url,
         [Description("The search query to inspect.")] string query,
@@ -529,7 +529,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_query_page_detail_stats")]
-    [Description("Get Bing daily clicks, impressions, and position for a specific query/page pair.")]
+    [Description("Get Bing daily clicks, impressions, and position for a specific query/page pair. Returns Bing's full available daily history; there is no date range parameter to narrow it.")]
     internal Task<string> GetQueryPageDetailStats(
         [Description("The Bing site URL.")] string site_url,
         [Description("The search query to inspect.")] string query,
@@ -541,7 +541,7 @@ internal sealed class BingWebmasterTool(BingWebmasterClient client, IndexNowClie
             cancellationToken);
 
     [McpServerTool(Name = "get_keyword_stats")]
-    [Description("Get market-wide Bing keyword statistics. This endpoint does not require a site URL.")]
+    [Description("Get market-wide Bing keyword statistics. This endpoint does not require a site URL. Unlike get_keyword, it has no date range parameter.")]
     internal Task<string> GetKeywordStats(
         [Description("The keyword query text.")] string query,
         [Description("The market country, for example US.")] string country,

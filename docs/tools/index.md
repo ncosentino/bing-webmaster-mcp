@@ -97,6 +97,16 @@ inputs plus a `submittedAt`/`requestedAt` timestamp and a success indicator. All
 normalized to ISO-8601 -- Bing's underlying `/Date(...)/ ` wire format is never exposed to the
 client.
 
+### Date ranges
+
+Only [`get_keyword`](get-keyword.md) and [`get_related_keywords`](get-related-keywords.md) accept
+a `start_date`/`end_date` parameter. Every other analytics tool (`get_rank_and_traffic_stats`,
+`get_query_stats`, `get_page_stats`, `get_page_query_stats`, `get_query_page_stats`,
+`get_query_page_detail_stats`, `get_query_traffic_stats`, `get_keyword_stats`) returns a fixed
+window decided by Bing, with no way to request a specific period. Some of these return one row per
+day, but that's a property of the response, not a request parameter -- there's no input that
+narrows it.
+
 ### `get_query_stats` vs `get_page_stats`
 
 Bing's API reuses one underlying response shape across several endpoints. `get_query_stats` and

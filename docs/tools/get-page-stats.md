@@ -21,8 +21,16 @@ Get traffic statistics for your site's top pages.
 ```json
 {
   "siteUrl": "https://www.example.com/",
-  "rowCount": 1,
+  "rowCount": 3,
   "rows": [
+    {
+      "page": "https://www.example.com/blog/my-post",
+      "date": "2026-02-19T00:00:00Z",
+      "clicks": 58,
+      "impressions": 1150,
+      "avgClickPosition": 3,
+      "avgImpressionPosition": 5
+    },
     {
       "page": "https://www.example.com/blog/my-post",
       "date": "2026-02-20T00:00:00Z",
@@ -30,6 +38,14 @@ Get traffic statistics for your site's top pages.
       "impressions": 1204,
       "avgClickPosition": 3,
       "avgImpressionPosition": 5
+    },
+    {
+      "page": "https://www.example.com/blog/other-post",
+      "date": "2026-02-20T00:00:00Z",
+      "clicks": 34,
+      "impressions": 812,
+      "avgClickPosition": 4,
+      "avgImpressionPosition": 6
     }
   ],
   "queriedAt": "2026-02-21T19:00:00Z"
@@ -51,3 +67,7 @@ Get traffic statistics for your site's top pages.
   `page` here so the output isn't confusing.
 - Use [`get_page_query_stats`](get-page-query-stats.md) to see which queries drive traffic to a
   specific page from this list.
+- Rows are per page *per day*, so the same page can appear multiple times across the window --
+  the example above is truncated to 3 rows for readability.
+- There is no date range parameter -- Bing returns a fixed window server-side and this tool
+  cannot request a specific period.
