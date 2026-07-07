@@ -5,7 +5,9 @@ using BingWebmasterMcp.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using System.Reflection;
 
 var apiKeyResolver = new ApiKeyResolver("BING_WEBMASTER_API_KEY");
 var indexNowKeyResolver = new ApiKeyResolver("BING_INDEXNOW_KEY");
@@ -61,7 +63,20 @@ builder.Services.AddTransient<IndexNowClient>(sp =>
 });
 
 builder.Services
-    .AddMcpServer()
+    .AddMcpServer(options =>
+    {
+        // The assembly version is set from -p:Version=X.Y.Z at release build time
+        // (see .github/workflows/release.yml), keeping this in sync with the Go
+        // binary's ldflags-injected version instead of the SDK's own build default.
+        var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        options.ServerInfo = new Implementation
+        {
+            Name = "bing-webmaster-mcp",
+            Version = assemblyVersion is null
+                ? "dev"
+                : $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}",
+        };
+    })
     .WithStdioServerTransport()
     .WithTools<BingWebmasterTool>();
 
