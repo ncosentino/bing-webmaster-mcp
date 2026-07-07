@@ -21,8 +21,18 @@ Get the headline daily clicks and impressions trend for a site.
 ```json
 {
   "siteUrl": "https://www.example.com/",
-  "rowCount": 1,
+  "rowCount": 3,
   "rows": [
+    {
+      "date": "2026-02-18T00:00:00Z",
+      "clicks": 198,
+      "impressions": 5102
+    },
+    {
+      "date": "2026-02-19T00:00:00Z",
+      "clicks": 226,
+      "impressions": 5387
+    },
     {
       "date": "2026-02-20T00:00:00Z",
       "clicks": 214,
@@ -47,4 +57,7 @@ Get the headline daily clicks and impressions trend for a site.
 
 - This is the site-wide daily total -- for a breakdown by query or page, see
   [`get_query_stats`](get-query-stats.md) and [`get_page_stats`](get-page-stats.md).
-- One row per day.
+- One row per day. The example above is truncated to 3 rows for readability -- a real response
+  typically spans several weeks.
+- There is no date range parameter -- Bing returns a fixed window server-side and this tool
+  cannot request a specific period.

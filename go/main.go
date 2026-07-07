@@ -186,42 +186,42 @@ func registerTools(srv *mcp.Server, bingClient *bingwebmaster.Client, indexNowCl
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_rank_and_traffic_stats", Description: "Get clicks and impressions over time for a site."},
+		&mcp.Tool{Name: "get_rank_and_traffic_stats", Description: "Get clicks and impressions over time for a site. Bing returns a fixed date window; there is no date range parameter."},
 		toolHandler("getting rank and traffic stats", func(ctx context.Context, input getRankAndTrafficStatsInput) (any, error) {
 			return bingClient.GetRankAndTrafficStats(ctx, input.SiteURL)
 		}),
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_query_stats", Description: "Get top search queries for a site."},
+		&mcp.Tool{Name: "get_query_stats", Description: "Get top search queries for a site. Bing returns a fixed date window; there is no date range parameter."},
 		toolHandler("getting query stats", func(ctx context.Context, input getQueryStatsInput) (any, error) {
 			return bingClient.GetQueryStats(ctx, input.SiteURL)
 		}),
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_page_stats", Description: "Get top pages for a site."},
+		&mcp.Tool{Name: "get_page_stats", Description: "Get top pages for a site. Bing returns a fixed date window; there is no date range parameter."},
 		toolHandler("getting page stats", func(ctx context.Context, input getPageStatsInput) (any, error) {
 			return bingClient.GetPageStats(ctx, input.SiteURL)
 		}),
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_page_query_stats", Description: "Get top queries for a specific page."},
+		&mcp.Tool{Name: "get_page_query_stats", Description: "Get top queries for a specific page. Bing returns a fixed date window; there is no date range parameter."},
 		toolHandler("getting page query stats", func(ctx context.Context, input getPageQueryStatsInput) (any, error) {
 			return bingClient.GetPageQueryStats(ctx, input.SiteURL, input.Page)
 		}),
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_query_page_stats", Description: "Get top pages for a specific query."},
+		&mcp.Tool{Name: "get_query_page_stats", Description: "Get top pages for a specific query. Bing returns a fixed date window; there is no date range parameter."},
 		toolHandler("getting query page stats", func(ctx context.Context, input getQueryPageStatsInput) (any, error) {
 			return bingClient.GetQueryPageStats(ctx, input.SiteURL, input.Query)
 		}),
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_keyword_stats", Description: "Get market-wide Bing keyword statistics."},
+		&mcp.Tool{Name: "get_keyword_stats", Description: "Get market-wide Bing keyword statistics. Unlike get_keyword, this endpoint has no date range parameter."},
 		toolHandler("getting keyword stats", func(ctx context.Context, input getKeywordStatsInput) (any, error) {
 			return bingClient.GetKeywordStats(ctx, input.Query, input.Country, input.Language)
 		}),
@@ -368,14 +368,14 @@ func registerTools(srv *mcp.Server, bingClient *bingwebmaster.Client, indexNowCl
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_query_page_detail_stats", Description: "Get daily stats for a specific query and page combination."},
+		&mcp.Tool{Name: "get_query_page_detail_stats", Description: "Get daily stats for a specific query and page combination. Returns Bing's full available daily history; there is no date range parameter to narrow it."},
 		toolHandler("getting query page detail stats", func(ctx context.Context, input getQueryPageDetailStatsInput) (any, error) {
 			return bingClient.GetQueryPageDetailStats(ctx, input.SiteURL, input.Query, input.Page)
 		}),
 	)
 
 	mcp.AddTool(srv,
-		&mcp.Tool{Name: "get_query_traffic_stats", Description: "Get daily clicks and impressions for a specific query."},
+		&mcp.Tool{Name: "get_query_traffic_stats", Description: "Get daily clicks and impressions for a specific query. Returns Bing's full available daily history; there is no date range parameter to narrow it."},
 		toolHandler("getting query traffic stats", func(ctx context.Context, input getQueryTrafficStatsInput) (any, error) {
 			return bingClient.GetQueryTrafficStats(ctx, input.SiteURL, input.Query)
 		}),

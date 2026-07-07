@@ -26,8 +26,18 @@ to your site).
   "query": "blazor dependency injection",
   "country": "us",
   "language": "en-US",
-  "rowCount": 1,
+  "rowCount": 3,
   "rows": [
+    {
+      "date": "2026-02-18T00:00:00Z",
+      "impressions": 812,
+      "broadImpressions": 1985
+    },
+    {
+      "date": "2026-02-19T00:00:00Z",
+      "impressions": 935,
+      "broadImpressions": 2260
+    },
     {
       "date": "2026-02-20T00:00:00Z",
       "impressions": 890,
@@ -52,6 +62,11 @@ to your site).
   keyword statistics are market-wide, reflecting overall Bing search volume for that term rather
   than data specific to any of your verified sites.
 - `broadImpressions` includes broad/related-match impressions in addition to the exact query.
+- Each row carries its own `date`, but there is no request parameter to filter or narrow that
+  range -- Bing returns its full available daily history and you filter client-side. The example
+  above is truncated to 3 rows for readability; a real response typically spans several weeks.
 - For your own site's actual ranking/traffic on a query, use
   [`get_query_stats`](get-query-stats.md) or [`get_query_page_stats`](get-query-page-stats.md)
   instead.
+- Unlike [`get_keyword`](get-keyword.md), this endpoint has no `start_date`/`end_date` parameter --
+  Bing returns a fixed history window and there is no way to request a specific period.
