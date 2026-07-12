@@ -127,6 +127,36 @@ the `submit_url_indexnow` tool:
 
 ---
 
+## Shared Streamable HTTP
+
+Start one server process:
+
+```bash
+./bwt-mcp-go-linux-amd64 \
+  --transport http \
+  --listen-address 127.0.0.1 \
+  --port 8083
+```
+
+Then point every local agent session at it:
+
+```json
+{
+  "mcpServers": {
+    "bing-webmaster": {
+      "type": "http",
+      "url": "http://127.0.0.1:8083/mcp",
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+See [Shared Service](shared-service.md) for credential, lifecycle, and startup
+management.
+
+---
+
 ## Troubleshooting
 
 **Server exits immediately on startup:** No Bing Webmaster API key was found in any of the CLI

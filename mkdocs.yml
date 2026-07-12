@@ -112,6 +112,8 @@ nav:
       - remove_page_preview_block: tools/remove-page-preview-block.md
   - Setup by Tool: setup-by-tool.md
   - Configuration: configuration.md
+  - Transports: transports.md
+  - Shared Service: shared-service.md
   - Go vs C#: implementations.md
   - Building from Source: building.md
   - Troubleshooting: troubleshooting.md

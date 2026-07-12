@@ -19,9 +19,17 @@ response formats. Pick based on your preferences.
 | Language | Go 1.26 | C# / .NET 10 |
 | MCP SDK | Official `modelcontextprotocol/go-sdk` | Official `ModelContextProtocol` (.NET) |
 | AOT compiled | Yes | Yes (Native AOT) |
+| Transports | STDIO, Streamable HTTP | STDIO, Streamable HTTP |
+| HTTP mode | Stateless | Stateless |
+| Default listener | `127.0.0.1:8080` | `127.0.0.1:8080` |
+| HTTP endpoints | `/mcp`, `/health` | `/mcp`, `/health` |
 
 Both binaries are fully self-contained. No Go toolchain, .NET runtime, Node.js, or Python is
 needed to run them.
+
+Both implement the same shared HTTP contract, including Host and cross-origin
+validation. Disallowed Host headers return `403` on Go and `400` on C# according
+to each framework's conventions.
 
 ---
 

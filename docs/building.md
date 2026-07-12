@@ -80,6 +80,23 @@ Publish as a Native AOT self-contained binary:
 
 ---
 
+## Running HTTP locally
+
+```bash
+cd go
+go run . --transport http --listen-address 127.0.0.1 --port 8083
+```
+
+```bash
+cd csharp
+dotnet run --project src/BingWebmasterMcp -- \
+  --transport http --listen-address 127.0.0.1 --port 8083
+```
+
+Both serve MCP at `/mcp` and health metadata at `/health`.
+
+---
+
 ## End-to-End Testing
 
 Unit tests (`go test ./...`, `dotnet test`) mock the HTTP layer and are genuinely thorough about
