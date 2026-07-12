@@ -12,6 +12,11 @@ The server couldn't find a Bing Webmaster API key in any of the three sources (C
 environment variable, `.env` file). Verify the environment variable name is exactly
 `BING_WEBMASTER_API_KEY` -- it's case-sensitive. See [Configuration](configuration.md).
 
+**HTTP client receives 404**
+
+Use the MCP endpoint `http://127.0.0.1:8083/mcp`. The server root is not an MCP
+endpoint. Service supervisors can check `http://127.0.0.1:8083/health`.
+
 **"Invalid API key" or 401/403 errors from every tool**
 
 1. Confirm the key was copied in full from Bing Webmaster Tools → Settings → API Access.

@@ -1,9 +1,11 @@
 // Command bing-webmaster-mcp is an MCP server that exposes Bing Webmaster Tools
-// and IndexNow as tools for AI assistants. It communicates via STDIO using the MCP protocol.
+// and IndexNow as tools for AI assistants. It supports STDIO and Streamable HTTP.
 //
 // Usage:
 //
 //	bing-webmaster-mcp [--api-key <key>] [--indexnow-key <key>]
+//	    [--transport stdio|http] [--listen-address <address>] [--port <port>]
+//	    [--allowed-hosts <list>]
 //
 // Credential resolution order: CLI flags > environment variables > .env file.
 package main
@@ -15,6 +17,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/ncosentino/bing-webmaster-mcp/go/internal/bingwebmaster"
@@ -32,7 +37,23 @@ var listSitesInputSchema = json.RawMessage(`{"type":"object","properties":{},"re
 func main() {
 	apiKey := flag.String("api-key", "", "Bing Webmaster API key")
 	indexNowKey := flag.String("indexnow-key", "", "Optional default IndexNow key")
+	transport := flag.String("transport", "stdio", "Transport mode: stdio or http")
+	listenAddress := flag.String(
+		"listen-address",
+		"",
+		"HTTP listen address (default MCP_LISTEN_ADDRESS or 127.0.0.1)",
+	)
+	port := flag.Int("port", 0, "HTTP listen port (default PORT or 8080)")
+	allowedHosts := flag.String(
+		"allowed-hosts",
+		"localhost,127.0.0.1,[::1]",
+		"Comma-separated Host header allow-list for HTTP transport",
+	)
 	flag.Parse()
+	explicitFlags := make(map[string]bool)
+	flag.Visit(func(definedFlag *flag.Flag) {
+		explicitFlags[definedFlag.Name] = true
+	})
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
@@ -55,9 +76,44 @@ func main() {
 
 	srv := newServer(bingClient, indexNowClient)
 
-	slog.Info("bing-webmaster-mcp starting", "version", version, "transport", "stdio")
-	if err := srv.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
-		slog.Error("server stopped with error", "err", err)
+	switch *transport {
+	case "http":
+		httpListenAddress, err := resolveHTTPListenAddress(
+			*listenAddress,
+			explicitFlags["listen-address"],
+		)
+		if err != nil {
+			slog.Error("invalid HTTP listen address", "err", err)
+			os.Exit(1)
+		}
+		httpPort, err := resolveHTTPPort(*port, explicitFlags["port"])
+		if err != nil {
+			slog.Error("invalid HTTP port", "err", err)
+			os.Exit(1)
+		}
+		ctx, stop := signal.NotifyContext(
+			context.Background(),
+			os.Interrupt,
+			syscall.SIGTERM,
+		)
+		defer stop()
+		if err := runHTTP(ctx, srv, httpServerOptions{
+			ListenAddress: httpListenAddress,
+			Port:          httpPort,
+			AllowedHosts:  splitAndTrim(*allowedHosts),
+			ShutdownToken: strings.TrimSpace(os.Getenv("MCP_SHUTDOWN_TOKEN")),
+		}); err != nil {
+			slog.Error("server stopped with error", "err", err)
+			os.Exit(1)
+		}
+	case "stdio":
+		slog.Info("bing-webmaster-mcp starting", "version", version, "transport", "stdio")
+		if err := srv.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+			slog.Error("server stopped with error", "err", err)
+			os.Exit(1)
+		}
+	default:
+		slog.Error("invalid transport", "transport", *transport, "expected", "stdio or http")
 		os.Exit(1)
 	}
 }
@@ -67,9 +123,21 @@ func newServer(bingClient *bingwebmaster.Client, indexNowClient *indexnow.Client
 		Name:    "bing-webmaster-mcp",
 		Version: version,
 	}, nil)
+	srv.AddReceivingMiddleware(coerceStringifiedArrayArgs(toolArrayFields))
 
 	registerTools(srv, bingClient, indexNowClient)
 	return srv
+}
+
+func splitAndTrim(value string) []string {
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
 }
 
 func registerTools(srv *mcp.Server, bingClient *bingwebmaster.Client, indexNowClient *indexnow.Client) {

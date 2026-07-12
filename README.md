@@ -164,6 +164,43 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
 
 ---
 
+## Shared Streamable HTTP
+
+Both binaries can run as one loopback service shared by every agent session:
+
+```bash
+./bwt-mcp-go-linux-amd64 \
+  --transport http \
+  --listen-address 127.0.0.1 \
+  --port 8083
+```
+
+Keep `BING_WEBMASTER_API_KEY` and the optional `BING_INDEXNOW_KEY` in the
+service environment or a protected `.env` file beside the binary.
+
+```json
+{
+  "mcpServers": {
+    "bing-webmaster": {
+      "type": "http",
+      "url": "http://127.0.0.1:8083/mcp",
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+MCP is served at `/mcp`; supervisors can probe `/health`. Both implementations
+default to loopback, validate Host and cross-origin request boundaries, limit
+request sizes and HTTP timeouts, and run statelessly without session affinity.
+
+The built-in host does not authenticate ordinary MCP callers. Keep it on
+loopback or place it behind TLS and an authenticated reverse proxy. See
+[Shared Service](https://github.devleader.ca/bing-webmaster-mcp/shared-service/)
+and [Transports](https://github.devleader.ca/bing-webmaster-mcp/transports/).
+
+---
+
 ## Available Tools
 
 55 MCP tools are exposed, covering the full range of Bing Webmaster Tools operations plus IndexNow support for instant re-indexing. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).

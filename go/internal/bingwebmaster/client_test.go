@@ -11,6 +11,41 @@ import (
 	"time"
 )
 
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (function roundTripFunc) RoundTrip(
+	request *http.Request,
+) (*http.Response, error) {
+	return function(request)
+}
+
+func TestListSites_TransportErrorRedactsAPIKey(t *testing.T) {
+	previousBaseURL := apiBaseURL
+	t.Cleanup(func() { apiBaseURL = previousBaseURL })
+	apiBaseURL = "https://example.invalid/api"
+
+	const secret = "review-secret-key"
+	client := &Client{
+		httpClient: &http.Client{
+			Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+				return nil, errors.New("dial failed")
+			}),
+		},
+		apiKey: secret,
+	}
+
+	_, err := client.ListSites(context.Background())
+	if err == nil {
+		t.Fatal("ListSites returned nil error")
+	}
+	if strings.Contains(err.Error(), secret) {
+		t.Fatalf("error disclosed API key: %v", err)
+	}
+	if !strings.Contains(err.Error(), "%5BREDACTED%5D") {
+		t.Errorf("error = %q, want redacted query marker", err)
+	}
+}
+
 func TestListSites_BuildsRequestAndMapsResponse(t *testing.T) {
 	previousBaseURL := apiBaseURL
 	t.Cleanup(func() { apiBaseURL = previousBaseURL })
