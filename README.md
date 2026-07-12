@@ -42,7 +42,7 @@ With this MCP server configured, you can ask your AI: _"Which URLs on my site ha
 
 > **Note:** Bing issues one API key per account -- it grants access to every site already verified under that account.
 
-> **Optional:** The bonus `submit_url_indexnow` tool uses a *separate* [IndexNow](https://www.indexnow.org) key, not your Bing Webmaster API key. See [Getting Started](https://github.devleader.ca/bing-webmaster-mcp/getting-started/) for details -- every other tool works without it.
+> **Optional:** The bonus `submit_url_indexnow` tool uses a *separate* [IndexNow](https://www.indexnow.org) key, not your Bing Webmaster API key. See [Getting Started](https://www.devleader.ca/projects/bing-webmaster-mcp/getting-started/) for details -- every other tool works without it.
 
 ### Step 2: Download a Binary
 
@@ -196,14 +196,14 @@ request sizes and HTTP timeouts, and run statelessly without session affinity.
 
 The built-in host does not authenticate ordinary MCP callers. Keep it on
 loopback or place it behind TLS and an authenticated reverse proxy. See
-[Shared Service](https://github.devleader.ca/bing-webmaster-mcp/shared-service/)
-and [Transports](https://github.devleader.ca/bing-webmaster-mcp/transports/).
+[Shared Service](https://www.devleader.ca/projects/bing-webmaster-mcp/shared-service/)
+and [Transports](https://www.devleader.ca/projects/bing-webmaster-mcp/transports/).
 
 ---
 
 ## Available Tools
 
-55 MCP tools are exposed, covering the full range of Bing Webmaster Tools operations plus IndexNow support for instant re-indexing. Full parameter documentation for every tool is on the [docs site](https://github.devleader.ca/bing-webmaster-mcp/tools/).
+55 MCP tools are exposed, covering the full range of Bing Webmaster Tools operations plus IndexNow support for instant re-indexing. Full parameter documentation for every tool is on the [docs site](https://www.devleader.ca/projects/bing-webmaster-mcp/tools/).
 
 | Area | Tools |
 |------|-------|
@@ -254,7 +254,7 @@ Every tool normalizes Bing's raw wire format (PascalCase fields, `/Date(...)/ ` 
 }
 ```
 
-See the [MCP Tools reference](https://github.devleader.ca/bing-webmaster-mcp/tools/) for every tool's exact response shape.
+See the [MCP Tools reference](https://www.devleader.ca/projects/bing-webmaster-mcp/tools/) for every tool's exact response shape.
 
 ---
 
@@ -274,7 +274,7 @@ Two independent credentials are resolved, each with the same priority order (hig
 2. **Environment variable:** `BING_INDEXNOW_KEY`
 3. **`.env` file:** `BING_INDEXNOW_KEY=your-indexnow-key-here`
 
-Missing the IndexNow key does not prevent the server from starting -- only `submit_url_indexnow` returns an error if it's not configured. See the [Configuration guide](https://github.devleader.ca/bing-webmaster-mcp/configuration/) for full details.
+Missing the IndexNow key does not prevent the server from starting -- only `submit_url_indexnow` returns an error if it's not configured. See the [Configuration guide](https://www.devleader.ca/projects/bing-webmaster-mcp/configuration/) for full details.
 
 ---
 

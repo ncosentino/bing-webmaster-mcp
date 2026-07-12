@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://github.devleader.ca/bing-webmaster-mcp/sitemap.xml
+Sitemap: https://www.devleader.ca/projects/bing-webmaster-mcp/sitemap.xml
