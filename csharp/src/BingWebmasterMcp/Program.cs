@@ -1,21 +1,32 @@
-using BingWebmasterMcp.BingWebmaster;
+using BingWebmasterMcp;
 using BingWebmasterMcp.Config;
-using BingWebmasterMcp.IndexNow;
 using BingWebmasterMcp.Tools;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using System.Reflection;
+
+if (ServerOptions.IsHelpRequested(args))
+{
+    await Console.Out.WriteLineAsync(ServerOptions.Usage).ConfigureAwait(false);
+    return 0;
+}
+
+ServerOptions options;
+try
+{
+    options = ServerOptions.Parse(args);
+}
+catch (ArgumentException exception)
+{
+    await Console.Error.WriteLineAsync($"ERROR: {exception.Message}").ConfigureAwait(false);
+    return 1;
+}
 
 var apiKeyResolver = new ApiKeyResolver("BING_WEBMASTER_API_KEY");
 var indexNowKeyResolver = new ApiKeyResolver("BING_INDEXNOW_KEY");
-
 var apiKey = apiKeyResolver.Resolve(
-    args.SkipWhile(a => a != "--api-key").Skip(1).FirstOrDefault());
+    ServerOptions.GetOption(args, "--api-key"));
 var indexNowKey = indexNowKeyResolver.Resolve(
-    args.SkipWhile(a => a != "--indexnow-key").Skip(1).FirstOrDefault());
+    ServerOptions.GetOption(args, "--indexnow-key"));
 
 if (string.IsNullOrWhiteSpace(apiKey))
 {
@@ -25,61 +36,40 @@ if (string.IsNullOrWhiteSpace(apiKey))
     return 1;
 }
 
-// Undocumented test-only hooks: point the compiled binary at a local mock server for
-// end-to-end testing. Left unset, both clients target the real Bing endpoints.
-var webmasterBaseUrlOverride = NonEmpty(Environment.GetEnvironmentVariable("BING_WEBMASTER_API_BASE_URL"));
-var indexNowBaseUrlOverride = NonEmpty(Environment.GetEnvironmentVariable("BING_INDEXNOW_API_BASE_URL"));
+var webmasterBaseUrlOverride = NonEmpty(
+    Environment.GetEnvironmentVariable("BING_WEBMASTER_API_BASE_URL"));
+var indexNowBaseUrlOverride = NonEmpty(
+    Environment.GetEnvironmentVariable("BING_INDEXNOW_API_BASE_URL"));
 
-static string? NonEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+if (options.Transport == "http")
+{
+    var app = Hosting.BuildHttpHost(
+        args,
+        apiKey,
+        indexNowKey,
+        options.Port,
+        webmasterBaseUrlOverride: webmasterBaseUrlOverride,
+        indexNowBaseUrlOverride: indexNowBaseUrlOverride,
+        listenAddress: options.ListenAddress,
+        shutdownToken: options.ShutdownToken);
+    await app.RunAsync().ConfigureAwait(false);
+    return 0;
+}
 
 var builder = Host.CreateApplicationBuilder(args);
-
-// All logs must go to stderr to avoid corrupting the MCP STDIO stream.
-builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
-builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
-builder.Services
-    .AddHttpClient(nameof(BingWebmasterClient), http =>
-    {
-        http.Timeout = TimeSpan.FromSeconds(30);
-    });
-
-builder.Services
-    .AddHttpClient(nameof(IndexNowClient), http =>
-    {
-        http.Timeout = TimeSpan.FromSeconds(30);
-    });
-
-builder.Services.AddTransient<BingWebmasterClient>(sp =>
-{
-    var factory = sp.GetRequiredService<IHttpClientFactory>();
-    return new BingWebmasterClient(factory.CreateClient(nameof(BingWebmasterClient)), apiKey!, webmasterBaseUrlOverride);
-});
-
-builder.Services.AddTransient<IndexNowClient>(sp =>
-{
-    var factory = sp.GetRequiredService<IHttpClientFactory>();
-    return new IndexNowClient(factory.CreateClient(nameof(IndexNowClient)), indexNowKey, indexNowBaseUrlOverride);
-});
-
-builder.Services
-    .AddMcpServer(options =>
-    {
-        // The assembly version is set from -p:Version=X.Y.Z at release build time
-        // (see .github/workflows/release.yml), keeping this in sync with the Go
-        // binary's ldflags-injected version instead of the SDK's own build default.
-        var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-        options.ServerInfo = new Implementation
-        {
-            Name = "bing-webmaster-mcp",
-            Version = assemblyVersion is null
-                ? "dev"
-                : $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}",
-        };
-    })
+Hosting.ConfigureCommonServices(
+    builder,
+    apiKey,
+    indexNowKey,
+    webmasterBaseUrlOverride: webmasterBaseUrlOverride,
+    indexNowBaseUrlOverride: indexNowBaseUrlOverride);
+Hosting.ConfigureMcpServer(builder.Services)
     .WithStdioServerTransport()
     .WithTools<BingWebmasterTool>();
 
 var host = builder.Build();
 await host.RunAsync().ConfigureAwait(false);
 return 0;
+
+static string? NonEmpty(string? value) =>
+    string.IsNullOrWhiteSpace(value) ? null : value;

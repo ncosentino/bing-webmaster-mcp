@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -1393,7 +1394,7 @@ func (c *Client) post(ctx context.Context, methodName string, payload any, dest 
 func (c *Client) do(req *http.Request, dest any) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("executing request: %w", err)
+		return fmt.Errorf("executing request: %w", redactRequestError(err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -1414,6 +1415,24 @@ func (c *Client) do(req *http.Request, dest any) error {
 	}
 
 	return nil
+}
+
+func redactRequestError(err error) error {
+	var requestError *url.Error
+	if !errors.As(err, &requestError) {
+		return err
+	}
+
+	redacted := *requestError
+	if endpoint, parseErr := url.Parse(requestError.URL); parseErr == nil {
+		query := endpoint.Query()
+		if query.Has("apikey") {
+			query.Set("apikey", "[REDACTED]")
+			endpoint.RawQuery = query.Encode()
+		}
+		redacted.URL = endpoint.String()
+	}
+	return &redacted
 }
 
 func (c *Client) buildURL(methodName string, params map[string]string) (string, error) {
