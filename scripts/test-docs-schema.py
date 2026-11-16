@@ -63,10 +63,11 @@ class DocumentationSchemaTests(unittest.TestCase):
     def test_published_documentation(self):
         checked = 0
         for path in (ROOT / 'site').rglob('*.html'):
-            page = Metadata(path.read_text(encoding='utf-8'))
-            if any(item.get('@type') in ('TechArticle', 'WebPage') for item in page.schemas):
-                self.check_identity(path)
-                checked += 1
+            with self.subTest(path=str(path.relative_to(ROOT / 'site'))):
+                page = Metadata(path.read_text(encoding='utf-8'))
+                if any(item.get('@type') in ('TechArticle', 'WebPage') for item in page.schemas):
+                    self.check_identity(path)
+                    checked += 1
         self.assertGreater(checked, 1)
 
     def test_authored_punctuation_and_encoded_canonical(self):
@@ -83,7 +84,7 @@ class DocumentationSchemaTests(unittest.TestCase):
             config = load_config(
                 config_file=str(ROOT / 'mkdocs.yml'), docs_dir=str(docs),
                 site_dir=str(root / 'site'), site_url='https://example.test/docs%20root/',
-                nav=[source],
+                nav=[{'Quoted "section"': [source]}],
             )
             build(config)
             output = root / 'site' / source[:-3] / 'index.html'
